@@ -12,8 +12,13 @@ It collects information in csv files on various searches.
 * Github search API: https://developer.github.com/v3/search/
 
 
-
-
 ## Clone set of GitHub repo: `github-clone-repos.py`
 
 Clones many repos.
+
+
+## Manage GIT-bsaed Assignment Submissions:  `git-assignment-submissions.py`
+
+This script manages assignment submissions done via GIT repositories.
+
+
