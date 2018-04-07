@@ -46,9 +46,10 @@ if __name__ == "__main__":
 
     git_url = 'git@bitbucket.org:ssardina-teaching/script-tools.git'
     git_local_dir = os.path.join(args.output, git_url.split('/')[1])
+    tag = 'init'
     if not os.path.exists(git_local_dir):
         # https://gitpython.readthedocs.io/en/2.1.9/reference.html
-        Repo.clone_from(git_url, git_local_dir, branch='init')
+        Repo.clone_from(git_url, git_local_dir, branch=tag)
     else:
         logging.warning('Repository %s already exists, ignoring...' % git_url)
 
