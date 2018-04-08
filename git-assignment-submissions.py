@@ -5,19 +5,22 @@ A script to manage assignment submissions via git repositories.
 Script takes a csv file containing repo URL GIT  for each team and will clone them in an output directory.
 
 """
-
+import shutil
 import os
 import argparse
 import csv
 import logging
-import git
 import iso8601
 from pytz import timezone
 import time
-# from git import Repo, Git # http://gitpython.readthedocs.io/en/stable/tutorial.html
+
+# https://gitpython.readthedocs.io/en/2.1.9/reference.html
+# http://gitpython.readthedocs.io/en/stable/tutorial.html
+import git
+# from git import Repo, Git
 
 # logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG, datefmt='%a, %d %b %Y %H:%M:%S')
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%a, %d %b %Y %H:%M:%S')
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%a, %d %b %Y %H:%M:%S')
 
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
 
@@ -25,54 +28,85 @@ DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='This script will clone a list of GIT repositories contatining assignment submissions.'
+        description='Clone a list of GIT repositories contatining assignment submissions via a tag.'
+    )
+
+    parser.add_argument(
+        dest='team_csv_file', type=str,
+        help='csv file containing the git repo for each team.'
     )
     parser.add_argument(
-        '--output',
-        help='directory where to clone all repositories'
+        dest='tag_str', type=str,
+        help = 'commit tag representing a submission.'
     )
     parser.add_argument(
-        '--repos-file',
-        help='list of URL repositories with their team names'
+        dest='output_folder', type=str,
+        help='the folder where to clone all repositories.'
     )
     args = parser.parse_args()
 
-    if args.repos_file is None or args.output is None:
-        logging.error('Missing output or repos arguments; check both information are given.')
-        exit(1)
+    team_csv_file = args.team_csv_file
+    submission_tag = args.tag_str
+    output_folder = args.output_folder
 
 
     git_repos = []
-    repo_file = open(args.repos_file, 'r')
-    repo_reader = csv.DictReader(repo_file, delimiter=',')
+    teams_file = open(team_csv_file, 'r')
+    teams_reader = csv.DictReader(teams_file, delimiter=',')
 
-    logging.info("Start cloning. Found %d team repositories.\n" % len(list(repo_reader)))
-    for row in repo_reader:
-        print(row['TEAM'], row['URL'])
+    # for row in teams_reader:
+    #     print(row['TEAM'], row['URL'])
+
+    submission_timestamps_file = open('submissions_timestamps.csv', 'w')
+    submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at'])
+    submission_writer.writeheader()
+
+    # logging.info("Start cloning. Found %d team repositories.\n" % len(list(teams_reader)))
+    for row in teams_reader:
+        print(row['TEAM'], row['GIT-URL'])
+
+        team_name = row['TEAM']
+        git_url = row['GIT-URL']
+        git_local_dir = os.path.join(output_folder, team_name)
+
+        if not os.path.exists(git_local_dir):
+            try:
+                git.Repo.clone_from(git_url, git_local_dir, branch=submission_tag)
+
+                repo = git.Repo(git_local_dir)
+                tag_commit = repo.tags[0].commit
+                tag_date = time.localtime(tag_commit.committed_date)
+                submission_time = time.strftime(DATE_FORMAT, tag_date)
+                submission_writer.writerow({'team' : team_name, 'submitted_at': submission_time})
+            except Exception as e:
+                print(e)
+
+
+
+        else:
+            repo = git.Repo(git_local_dir)
+            print(repo.tags)
+            tag_commit = repo.tags[0].commit
+            tag_date = time.localtime(tag_commit.committed_date)
+            submission_time = time.strftime(DATE_FORMAT, tag_date)
+
+
+            logging.warning('Repository for team {} already exists with tag dated {}; updating it...'.format(team_name, submission_time))
+            # local copy already exists - needs to update it maybe tag is newer
+
+            repo.remote('origin').fetch(tags=True)
+            try:
+                repo.git.checkout(submission_tag)
+            except git.GitCommandError as e:
+                print(e.stderr)
+                shutil.rmtree(git_local_dir)
+                logging.info('Removing repository for team {}'.format(team_name))
+
+        exit(0)
     print("\n")
 
-    git_url = 'git@bitbucket.org:ssardina-teaching/script-tools.git'
-    git_local_dir = os.path.join(args.output, git_url.split('/')[1])
-    tag = 'init'
-    if not os.path.exists(git_local_dir):
-        # https://gitpython.readthedocs.io/en/2.1.9/reference.html
-        git.Repo.clone_from(git_url, git_local_dir, branch=tag)
+    exit(0)
 
-    else:
-        logging.warning('Repository %s already exists, ignoring...' % git_url)
-        repo = git.Repo(git_local_dir)
-        print(repo.tags)
-        tag_commit = repo.tags[0].commit
-        tag_date = time.localtime(tag_commit.committed_date)
-        print(time.strftime(DATE_FORMAT, tag_date))
-
-        repo.remote('origin').fetch(tags=True)
-        print("fetch done")
-        # repo.remote('origin').pull()
-        # print("pull done")
-        repo.git.checkout('test')
-        print("checkout done")
-        # print(iso8601.parse_date(tag_date).astimezone(timezone(TIMEZONE)))
 
     # Now we clone all the repos in github_repos list
     # for repo in git_repos:
