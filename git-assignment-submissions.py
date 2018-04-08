@@ -66,8 +66,12 @@ if __name__ == "__main__":
         tag_date = time.localtime(tag_commit.committed_date)
         print(time.strftime(DATE_FORMAT, tag_date))
 
-        
-
+        repo.remote('origin').fetch(tags=True)
+        print("fetch done")
+        # repo.remote('origin').pull()
+        # print("pull done")
+        repo.git.checkout('test')
+        print("checkout done")
         # print(iso8601.parse_date(tag_date).astimezone(timezone(TIMEZONE)))
 
     # Now we clone all the repos in github_repos list
