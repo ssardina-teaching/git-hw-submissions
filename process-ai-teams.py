@@ -137,16 +137,19 @@ class TeamRegistration():
             logger.warn("Number of provided team members does not match number specified")
 
     def process(self, config):
+        # Create a folder in the output_folder with the team name
         dest_repo_folder = Path(config.output_folder) / Path(self.name)
         try:
-            os.makedirs(dest_repo_folder)
+            os.makedirs(str(dest_repo_folder))
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
 
+        # Clone repo in team folder
         exit_code = clone_repo(self.repo_link, str(dest_repo_folder))
         if exit_code is not 0:
             logger.error("Failed to complete processing for team: %s", self.name)
+            # TODO: should not just fail and return if repo already exists in file system
             return
 
         tag_timestamps = get_tag_timestamps(str(dest_repo_folder))
@@ -170,19 +173,40 @@ class TeamRegistration():
         logger.error("Successfully processed team: %s", self.name)
 
 
-def main():
-    parser = argparse.ArgumentParser()
 
-    parser.add_argument(dest='team_csv_file', type=str)
-    parser.add_argument(dest='tag_str', type=str)
-    parser.add_argument(dest='output_folder', type=str)
+
+
+
+
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Clone a list of GIT repositories contatining assignment submissions via a tag.'
+    )
+
+    parser.add_argument(
+        dest='team_csv_file', type=str,
+        help='csv file containing the git repo for each team.'
+    )
+    parser.add_argument(
+        dest='tag_str', type=str,
+        help = 'commit tag representing a submission.'
+    )
+    parser.add_argument(
+        dest='output_folder', type=str,
+        help='the folder where to clone all repositories.'
+    )
     args = parser.parse_args()
 
+    # Build configuration settings
     csv_file_path = args.team_csv_file
     tag_str = args.tag_str
     output_folder = args.output_folder
     config = Config(
         output_folder=output_folder,
+        # TODO: make the date more flexible, not hard coded in the script. Maybe just add timestamp of tag somewhere
+        #           (separate csv submission date file or in zip file in name?)
         due_date=datetime(2018, 4, 9, tzinfo=timezone(timedelta(hours=10))),
         tag_str=tag_str,
     )
@@ -190,6 +214,7 @@ def main():
     all_teams = []
     with open(csv_file_path) as csvfile:
         reader = csv.DictReader(csvfile)
+        # Each row is a team, with members and URL to git repo
         for row in reader:
             num_members = row['How many members?']
             try:
@@ -201,6 +226,7 @@ def main():
                     row['Name of the team ']
                 )
 
+            # Buld student members for the team
             members = []
             for i in range(num_members):
                 name_key = 'Full name of member {}'.format(i+1)
