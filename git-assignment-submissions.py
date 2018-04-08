@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     # logging.info("Start cloning. Found %d team repositories.\n" % len(list(teams_reader)))
     for row in teams_reader:
-        print(row['TEAM'], row['GIT-URL'])
+        logging.info('Processing team {} in git url {}'.format(row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
         git_url = row['GIT-URL']
@@ -86,6 +86,11 @@ if __name__ == "__main__":
         else:
             repo = git.Repo(git_local_dir)
             print(repo.tags)
+            print(repo.tags[0].name)
+
+            # the_tag = next(tag for tag in repo.tags if tag.name = submission_tag, None)
+
+
             tag_commit = repo.tags[0].commit
             tag_date = time.localtime(tag_commit.committed_date)
             submission_time = time.strftime(DATE_FORMAT, tag_date)
