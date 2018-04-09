@@ -17,7 +17,7 @@ It collects information in csv files on various searches.
 Clones many repos.
 
 
-## Manage GIT-bsaed Assignment Submissions:  `git-assignment-submissions.py`
+## Manage GIT-based Assignment Submissions:  `git-assignment-submissions.py`
 
 This script manages assignment submissions done via GIT repositories. For example:
 
@@ -29,4 +29,18 @@ Once all git repos have been cloned in `git-submissions/`, one can build zip fil
 
 ```
 for d in git-submissions/*; do echo "============> Processing ${d}" ; zip -j "./zip/`basename "$d.zip"`" "${d}"/p2-multiagent/* ;done
+```
+
+### Some useful commands
+
+To count the number of commits between dates:
+
+```
+git log --after="2018-03-26T00:00:00+11:00" --before="2018-03-28T00:00:00+11:00" | grep "Date:" | wc -l
+```
+
+To copy just the new zip files:
+
+```
+rsync  -avt --ignore-existing  zip-submissions/*.zip AI18-assessments/project-2/zip-submissions/
 ```

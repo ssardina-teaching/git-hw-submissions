@@ -97,7 +97,7 @@ if __name__ == "__main__":
     team_bad = []
     for c, row in enumerate(list_teams, 1):
         print('\n')
-        logging.info('Processing {} team {} in git url {}'.format(c, row['TEAM'], row['GIT-URL']))
+        logging.info('Processing {} team **{}** in git url {}'.format(c, row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
         git_url = row['GIT-URL']
