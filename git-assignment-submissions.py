@@ -55,25 +55,43 @@ if __name__ == "__main__":
         dest='output_folder', type=str,
         help='the folder where to clone all repositories.'
     )
+    parser.add_argument(
+        '--team',
+        help='to mark a specific team only.'
+    )
+    parser.add_argument(
+        '--only-new',
+        help='only bring new repos.',
+        action='store_true',
+    )
     args = parser.parse_args()
 
     team_csv_file = args.team_csv_file
     submission_tag = args.tag_str
     output_folder = args.output_folder
+    only_new = args.only_new
 
-
-    # Get the list of teams with their GIT URL from csv file
     teams_file = open(team_csv_file, 'r')
+    # Get the list of teams with their GIT URL from csv file
     teams_reader = csv.DictReader(teams_file, delimiter=',')
     list_teams = list(teams_reader)
 
+    # If there was a specific team given, just keep that one in the list to clone just that
+    if not args.team is None:
+        list_teams = [team for team in list_teams if team['TEAM'] == args.team]
+
     # Setup file to save the submission timestamps for each successful student
-    submission_timestamps_file = open('submissions_timestamps.csv', 'w')
-    submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
-    submission_writer.writeheader()
+    if only_new:
+        logging.info('Cloning only new repos')
+        submission_timestamps_file = open('submissions_timestamps.csv', 'a')
+        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+    else:
+        submission_timestamps_file = open('submissions_timestamps.csv', 'w')
+        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+        submission_writer.writeheader()
 
 
-    logging.info('Found {} team repositories.'.format(len(list_teams)))
+    logging.info('Found {} teams to clone in folder {}/.'.format(len(list_teams), output_folder))
     successful_clones = 1
     team_good = []
     team_bad = []
@@ -95,7 +113,7 @@ if __name__ == "__main__":
                                 format(team_name, submission_tag, e.stderr))
                 continue
             submission_time, submission_commit = get_tag_time(repo, submission_tag)
-        else:
+        elif not only_new:
             print('\t Repository for team {} already exists.'.format(team_name))
             try:
                 repo = git.Repo(git_local_dir)
@@ -128,6 +146,9 @@ if __name__ == "__main__":
                     print('\n')
                     shutil.rmtree(git_local_dir)
                     continue
+        else:
+            print('\t Repository for team {} already exists and only-new options is TRUE. Skipping...'.format(team_name))
+            continue
 
         # We now we have a repo with the submission tag  updated in the local filesystem
         print('\t Repo for team {} extracted successfully with tag date {}'.format(team_name, submission_time))
