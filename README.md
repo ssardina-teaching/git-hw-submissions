@@ -28,5 +28,5 @@ python3 git-assignment-submissions.py ai18-repos.csv submission git-submissions/
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
 
 ```
-for d in $(ls -d git-submissions/*); do echo "============> Processing ${d}" ; zip -j zip-submissions/`basename ${d}`.zip ${d}/p2-multiagent/* ;done
+for d in git-submissions/*; do echo "============> Processing ${d}" ; zip -j "./zip/`basename "$d.zip"`" "${d}"/p2-multiagent/* ;done
 ```

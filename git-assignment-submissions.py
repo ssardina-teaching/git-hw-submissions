@@ -139,10 +139,11 @@ if __name__ == "__main__":
     print("\n ================================ \n")
     logging.info("Finished clonning repositories: {} successful out of {}".format(successful_clones, len(list_teams)))
     print("\n ================================ \n")
-    print('Teams clonned successfully:')
+    print('Teams clonned successfully ({}):'.format(len(team_good)))
     for t in team_good:
         print(t)
 
-    print('\n Teams NOT clonned successfully:')
+    print('\n')
+    print('Teams NOT clonned successfully ({}):'.format(len(team_bad)))
     for t in team_bad:
         print(t)
