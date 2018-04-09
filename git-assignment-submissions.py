@@ -2,17 +2,19 @@
 """
 A script to manage assignment submissions via git repositories.
 
-Script takes a csv file containing repo URL GIT  for each team and will clone them in an output directory.
+Script takes a csv file containing repo URL GIT  for each team and a tag and will clone/update them in an
+output directory.
 
+It also produces a file submission_timestamp.csv with all timestamp of the tag for the successful repo cloned/updated.
 """
 import shutil
 import os
 import argparse
 import csv
 import logging
-import iso8601
-from pytz import timezone
-import sys, traceback
+# import iso8601
+# from pytz import timezone
+import traceback
 import time
 
 # https://gitpython.readthedocs.io/en/2.1.9/reference.html
@@ -33,7 +35,7 @@ def get_tag_time(repo, tag_str):
         return None
     else:
         tag_date = time.localtime(tag_commit.committed_date)
-        return time.strftime(DATE_FORMAT, tag_date)
+        return time.strftime(DATE_FORMAT, tag_date), tag_commit
 
 
 if __name__ == "__main__":
@@ -60,23 +62,24 @@ if __name__ == "__main__":
     output_folder = args.output_folder
 
 
-    git_repos = []
+    # Get the list of teams with their GIT URL from csv file
     teams_file = open(team_csv_file, 'r')
     teams_reader = csv.DictReader(teams_file, delimiter=',')
+    list_teams = list(teams_reader)
 
-
-    # setup file to save the submission timestamps for each successful student
+    # Setup file to save the submission timestamps for each successful student
     submission_timestamps_file = open('submissions_timestamps.csv', 'w')
-    submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at'])
+    submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
     submission_writer.writeheader()
 
-    no_teams = len(list(teams_reader))
-    teams_file.seek(0) # reset pointer to csv file; list use for the reader_file, reads all file, and pointer changes
 
-    logging.info(' Found {} team repositories.'.format(no_teams))
-    successful_clones = 0
-    for row in teams_reader:
-        logging.info('Processing team {} in git url {}'.format(row['TEAM'], row['GIT-URL']))
+    logging.info('Found {} team repositories.'.format(len(list_teams)))
+    successful_clones = 1
+    team_good = []
+    team_bad = []
+    for c, row in enumerate(list_teams, 1):
+        print('\n')
+        logging.info('Processing {} team {} in git url {}'.format(c, row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
         git_url = row['GIT-URL']
@@ -87,15 +90,16 @@ if __name__ == "__main__":
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=submission_tag)
             except git.GitCommandError as e:
+                team_bad.append(team_name)
                 logging.warning('Repo for team {} with tag {} cannot be cloned: {}'.
                                 format(team_name, submission_tag, e.stderr))
                 continue
-            submission_time = get_tag_time(repo, submission_tag)
+            submission_time, submission_commit = get_tag_time(repo, submission_tag)
         else:
             print('\t Repository for team {} already exists.'.format(team_name))
             try:
                 repo = git.Repo(git_local_dir)
-                submission_time = get_tag_time(repo, submission_tag)
+                submission_time, _ = get_tag_time(repo, submission_tag)
                 if submission_time is None:
                     print('\t No tag {} in the repository, strange as it was already there...'.format(submission_tag))
                 else:
@@ -103,19 +107,22 @@ if __name__ == "__main__":
 
                 # Next, we update the repo to get updated submission tag
                 repo.remote('origin').fetch(tags=True)
-                submission_time = get_tag_time(repo, submission_tag)
+                submission_time, submission_commit = get_tag_time(repo, submission_tag)
                 if submission_time is None:
+                    team_bad.append(team_name)
                     print('\t No tag {} in the repository for team {} anymore; removing it...'.format(submission_tag,
                                                                                                       team_name))
                     shutil.rmtree(git_local_dir)
                     continue
                 repo.git.checkout(submission_tag)
             except git.GitCommandError as e:
+                    team_bad.append(team_name)
                     logging.warning('\t Problem with existing repo for team {}; removing it: {}'.format(team_name, e.stderr))
                     print('\n')
                     shutil.rmtree(git_local_dir)
                     continue
             except:
+                    team_bad.append(team_name)
                     logging.warning('\t Local repo {} is problematic; removing it...'.format(git_local_dir))
                     print(traceback.print_exc())
                     print('\n')
@@ -124,20 +131,18 @@ if __name__ == "__main__":
 
         # We now we have a repo with the submission tag  updated in the local filesystem
         print('\t Repo for team {} extracted successfully with tag date {}'.format(team_name, submission_time))
-        submission_writer.writerow({'team' : team_name, 'submitted_at': submission_time})
+        submission_writer.writerow({'team' : team_name, 'submitted_at': submission_time, 'commit': submission_commit})
         successful_clones = successful_clones + 1
+        team_good.append(team_name)
         # local copy already exists - needs to update it maybe tag is newer
 
-    print("\n")
+    print("\n ================================ \n")
+    logging.info("Finished clonning repositories: {} successful out of {}".format(successful_clones, len(list_teams)))
+    print("\n ================================ \n")
+    print('Teams clonned successfully:')
+    for t in team_good:
+        print(t)
 
-    logging.info("Finished clonning repositories: {} successful out of {}".format(successful_clones, no_teams))
-
-    # Now we clone all the repos in github_repos list
-    # for repo in git_repos:
-    #     print("\nCloning repo: " + repo[0])
-    #     if os.path.isdir(repo[0]):
-    #         print("\t Repo already cloned, skipping....")
-    #     else:
-    #         cmd = "git clone %s %s" % (repo[1], repo[0])
-    #         print("Cloneing: %s" %cmd)
-    #         os.system(cmd)
+    print('\n Teams NOT clonned successfully:')
+    for t in team_bad:
+        print(t)
