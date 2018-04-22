@@ -62,7 +62,12 @@ if __name__ == "__main__":
     parser.add_argument(
         '--only-new',
         help='only bring new repos.',
-        action='store_true',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--file-timestamps',
+        help='filename to store the timestamps of submissions (default: %(default)s)..',
+        default='submissions_timestamps.csv',
     )
     args = parser.parse_args()
 
@@ -70,6 +75,7 @@ if __name__ == "__main__":
     submission_tag = args.tag_str
     output_folder = args.output_folder
     only_new = args.only_new
+    timestamps_file = args.file_timestamps
 
     teams_file = open(team_csv_file, 'r')
     # Get the list of teams with their GIT URL from csv file
@@ -83,10 +89,10 @@ if __name__ == "__main__":
     # Setup file to save the submission timestamps for each successful student
     if only_new:
         logging.info('Cloning only new repos')
-        submission_timestamps_file = open('submissions_timestamps.csv', 'a')
+        submission_timestamps_file = open(timestamps_file, 'a')
         submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
     else:
-        submission_timestamps_file = open('submissions_timestamps.csv', 'w')
+        submission_timestamps_file = open(timestamps_file, 'w')
         submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
         submission_writer.writeheader()
 
