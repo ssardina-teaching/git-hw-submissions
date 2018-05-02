@@ -70,3 +70,6 @@ fabric.properties
 # End of https://www.gitignore.io/api/pycharm
 github-repos.csv
 *.csv
+git-submissions*
+zip-submissions*
+github-repos
