@@ -28,7 +28,13 @@ python3 git-assignment-submissions.py ai18-repos.csv submission git-submissions/
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
 
 ```
-for d in git-submissions/*; do echo "============> Processing ${d}" ; zip -j "./zip-submissions/`basename "$d.zip"`" "${d}"/p2-multiagent/* ;done
+for d in git-submissions-p2/*; do echo "============> Processing ${d}" ; zip -q -j "./zip-submissions-p2/`basename "$d.zip"`" "${d}"/p2-multiagent/* ;done
+```
+
+or for the final CTF project:
+
+``
+for d in git-submissions-p4/*; do echo "============> Processing ${d}" ; zip -q -j "./zip-submissions-p4/`basename "$d.zip"`" "${d}"/pacman-contest/* ;done
 ```
 
 ### Some useful commands
@@ -42,5 +48,5 @@ git log --after="2018-03-26T00:00:00+11:00" --before="2018-03-28T00:00:00+11:00"
 To copy just the new zip files:
 
 ```
-rsync  -avt --ignore-existing  zip-submissions/*.zip AI18-assessments/project-2/zip-submissions/
+rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project-4/zip-submissions/
 ```
