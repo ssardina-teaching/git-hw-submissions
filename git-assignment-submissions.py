@@ -180,15 +180,14 @@ if __name__ == "__main__":
         # local copy already exists - needs to update it maybe tag is newer
 
     print("\n ============================================== \n")
-    print('New teams: {}'.format(len(team_new)))
+    print('NEW TEAMS: {}'.format(len(team_new)))
     for t in team_new:
         print("\t %s" % t)
-    print('Unchanged teams: {}'.format(len(team_exist)))
+    print('UNCHANGED TEAMS: {}'.format(len(team_exist)))
     for t in team_exist:
         print("\t %s" % t)
 
-
     print('\n')
-    print('Teams NOT clonned successfully ({}):'.format(len(team_bad)))
+    print('TEAMS MISSING (or not clonned successfully): ({})'.format(len(team_bad)))
     for t in team_bad:
         print(t)
