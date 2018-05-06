@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         dest='team_csv_file', type=str,
-        help='csv file containing the git repo for each team.'
+        help='csv file containing the URL git repo for each team (must contain two named columns: TEAM and GIT-URL).'
     )
     parser.add_argument(
         dest='tag_str', type=str,
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--file-timestamps',
-        help='filename to store the timestamps of submissions (default: %(default)s)..',
+        help='filename to store the timestamps of submissions (default: %(default)s).',
         default='submissions_timestamps.csv',
     )
     args = parser.parse_args()
