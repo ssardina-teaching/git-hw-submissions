@@ -73,3 +73,5 @@ github-repos.csv
 git-submissions*
 zip-submissions*
 github-repos
+link-*
+*.bak
