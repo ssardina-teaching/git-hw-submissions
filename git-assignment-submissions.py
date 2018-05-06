@@ -121,7 +121,7 @@ if __name__ == "__main__":
         git_local_dir = os.path.join(output_folder, team_name)
 
         if not os.path.exists(git_local_dir):   # if there is already a local repo for the team
-            print('\t Cloning repo for team {} from remote.'.format(team_name))
+            print('\t Cloning team repo from remote'.format(team_name))
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=submission_tag)
             except git.GitCommandError as e:
