@@ -33,7 +33,7 @@ for d in git-submissions-p2/*; do echo "============> Processing ${d}" ; zip -q 
 
 or for the final CTF project:
 
-``
+```
 for d in git-submissions-p4/*; do echo "============> Processing ${d}" ; zip -q -j "./zip-submissions-p4/`basename "$d.zip"`" "${d}"/pacman-contest/* ;done
 ```
 
