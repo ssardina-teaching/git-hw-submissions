@@ -37,7 +37,7 @@ def get_tag_time(repo, tag_str):
         tag_date = time.localtime(tag_commit.committed_date)
         return time.strftime(DATE_FORMAT, tag_date), tag_commit
 
-
+# return timestamps form a csv submission file
 def load_timestamps(timestamp_filename):
     team_timestamps = {}
 
@@ -93,14 +93,9 @@ if __name__ == "__main__":
         list_teams = [team for team in list_teams if team['TEAM'] == args.team]
 
 
-    # Build submission timestamp data (if submission file given exists)
+    # If a submission csv file exists, make a backup of it as it will be overwritten
     if os.path.exists(timestamps_file):
-        existing_timestamps = load_timestamps(timestamps_file)
-        logging.info('Timestamp file exists; will update it ({} teams in last submission)...'.format(len(existing_timestamps)))
         shutil.copy(timestamps_file, timestamps_file + '.bak')
-    else:
-        existing_timestamps = []
-
 
     # Open the submission file for writing
     submission_timestamps_file = open(timestamps_file, 'w')
