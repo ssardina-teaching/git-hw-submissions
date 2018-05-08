@@ -108,20 +108,23 @@ if __name__ == "__main__":
     submission_writer.writeheader()
 
 
-    logging.info('Database contains {} teams to clone in folder {}/.'.format(len(list_teams), output_folder))
+    no_teams = len(list_teams)
+    logging.info('Database contains {} teams to clone in folder {}/.'.format(no_teams, output_folder))
     team_new = []
     team_missing = []
-    team_exist = []
+    team_unchanged = []
+    team_updated = []
     for c, row in enumerate(list_teams, 1):
         print('\n')
-        logging.info('Processing {} team **{}** in git url {}'.format(c, row['TEAM'], row['GIT-URL']))
+        logging.info('Processing {}/{} team **{}** in git url {}'.format(c, no_teams, row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
         git_url = row['GIT-URL']
         git_local_dir = os.path.join(output_folder, team_name)
 
+
         if not os.path.exists(git_local_dir):   # if there is already a local repo for the team
-            print('\t Cloning team repo from remote'.format(team_name))
+            print('\t Cloning NEW team repo from remote'.format(team_name))
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=submission_tag)
             except git.GitCommandError as e:
@@ -157,12 +160,12 @@ if __name__ == "__main__":
                 repo.git.checkout(submission_tag)
 
                 # Now processs timestamp to report new or unchanged repo
-                if team_name in existing_timestamps and submission_time == existing_timestamps[team_name]:
-                    team_exist.append(team_name)
-                    print('\t\t Team {} submission has not changed: {}.'.format(team_name, submission_time))
+                if submission_time == submission_time_local:
+                    print('\t\t Team {} submission has not changed.'.format(team_name, submission_time))
+                    team_unchanged.append(team_name)
                 else:
-                    print('\t Team {} updated successfully with tag date {}'.format(team_name, submission_time))
-                    team_new.append(team_name)
+                    print('\t Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
+                    team_updated.append(team_name)
             except git.GitCommandError as e:
                     team_missing.append(team_name)
                     logging.warning('\t Problem with existing repo for team {}; removing it: {}'.format(team_name, e.stderr))
@@ -185,10 +188,14 @@ if __name__ == "__main__":
     print("\n ============================================== \n")
     print('NEW TEAMS: {}'.format(len(team_new)))
     for t in team_new:
-        print("\t %s" % t)
-    print('UNCHANGED TEAMS: {}'.format(len(team_exist)))
-    for t in team_exist:
-        print("\t %s" % t)
+        print("\t {}".format(t))
+    print('UPDATED TEAMS: {}'.format(len(team_updated)))
+    for t in team_updated:
+        print("\t {}".format(t))
+    print('UNCHANGED TEAMS: {}'.format(len(team_unchanged)))
+    for t in team_unchanged:
+        print("\t {}".format(t))
     print('TEAMS MISSING (or not clonned successfully): ({})'.format(len(team_missing)))
     for t in team_missing:
-        print(t)
+        print("\t {}".format(t))
+    print("\n ============================================== \n")
