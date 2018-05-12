@@ -104,6 +104,7 @@ if __name__ == "__main__":
 
 
     no_teams = len(list_teams)
+    list_teams.sort(key=lambda tup: tup['TEAM'].lower())    # sort the list of teams
     logging.info('Database contains {} teams to clone in folder {}/.'.format(no_teams, output_folder))
     team_new = []
     team_missing = []
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     team_updated = []
     for c, row in enumerate(list_teams, 1):
         print('\n')
-        logging.info('Processing {}/{} team **{}** in git url {}'.format(c, no_teams, row['TEAM'], row['GIT-URL']))
+        logging.info('Processing {}/{} team **{}** in git url {}.'.format(c, no_teams, row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
         git_url = row['GIT-URL']
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 
 
         if not os.path.exists(git_local_dir):   # if there is already a local repo for the team
-            print('\t Cloning NEW team repo from remote'.format(team_name))
+            print('\t Trying to clone NEW team repo from URL {}.'.format(git_url))
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=submission_tag)
             except git.GitCommandError as e:
@@ -128,7 +129,7 @@ if __name__ == "__main__":
                                 format(team_name, submission_tag, e.stderr))
                 continue
             submission_time, submission_commit = get_tag_time(repo, submission_tag)
-            print('\t\t Team {} cloned successfully with tag date {}'.format(team_name, submission_time))
+            print('\t\t Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
             team_new.append(team_name)
         else:   # OK, so there is already a directory for this team in local repo, check if there is an update
             try:
