@@ -76,12 +76,19 @@ if __name__ == "__main__":
         help='filename to store the timestamps of submissions (default: %(default)s).',
         default='submissions_timestamps.csv',
     )
+    parser.add_argument(
+        '--add-timestamps',
+        help='append to the timestamps file.',
+        action='store_true'
+    )
     args = parser.parse_args()
 
     team_csv_file = args.team_csv_file
     submission_tag = args.tag_str
     output_folder = args.output_folder
     timestamps_file = args.file_timestamps
+    add_timestamps = args.add_timestamps
+
 
     teams_file = open(team_csv_file, 'r')
     # Get the list of teams with their GIT URL from csv file
@@ -98,9 +105,13 @@ if __name__ == "__main__":
         shutil.copy(timestamps_file, timestamps_file + '.bak')
 
     # Open the submission file for writing
-    submission_timestamps_file = open(timestamps_file, 'w')
-    submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
-    submission_writer.writeheader()
+    if add_timestamps:
+        submission_timestamps_file = open(timestamps_file, 'a')
+        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+    else:
+        submission_timestamps_file = open(timestamps_file, 'w')
+        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+        submission_writer.writeheader()
 
 
     no_teams = len(list_teams)
