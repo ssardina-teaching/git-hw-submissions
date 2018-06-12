@@ -15,6 +15,18 @@ if [ "$NO_ARGS" -lt 3 ]; then
 fi
 
 
+echo
+echo "# arguments called with ---->  ${@}     "
+echo "# \$1 ---------------------->  $1       "
+echo "# \$2 ---------------------->  $2       "
+echo "# \$3 ---------------------->  $3       "
+echo "# path to me --------------->  ${0}     "
+echo "# parent path -------------->  ${0%/*}  "
+echo "# my name ------------------>  ${0##*/} "
+echo
+
+
+
 INPUT=$1
 DIR=$2
 OUT=$3
