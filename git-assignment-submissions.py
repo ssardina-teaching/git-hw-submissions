@@ -9,6 +9,7 @@ It also produces a file submission_timestamp.csv with all timestamp of the tag f
 """
 import shutil
 import os
+import sys
 import argparse
 import csv
 import logging
@@ -147,6 +148,9 @@ if __name__ == "__main__":
                 logging.warning('Repo for team {} with tag {} cannot be cloned: {}'.
                                 format(team_name, submission_tag, e.stderr))
                 continue
+            except KeyboardInterrupt:
+                logging.warning('Script terminated via Keyboard Interrupt; finishing...')
+                sys.exit("keyboard interrupted!")
             submission_time, submission_commit, tagged_time = get_tag_time(repo, submission_tag)
             print('\t\t Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
             team_new.append(team_name)
@@ -187,6 +191,9 @@ if __name__ == "__main__":
                     print('\n')
                     shutil.rmtree(git_local_dir)
                     continue
+            except KeyboardInterrupt:
+                    logging.warning('Script terminated via Keyboard Interrupt; finishing...')
+                    sys.exit(1)
             except:
                     team_missing.append(team_name)
                     logging.warning('\t Local repo {} is problematic; removing it...'.format(git_local_dir))
