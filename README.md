@@ -1,23 +1,6 @@
 # Various Support Scripts for Teaching
 
-
-## Scrape Github for repo info: _github-scrape.py_
-
-It collects information in csv files on various searches.
-
-* Uses [PyGithub]()https://github.com/PyGithub/PyGithub) Github API.
-
-* Github searches: https://help.github.com/articles/searching-code/
-* Github search limits: https://developer.github.com/v3/search/#rate-limit
-    * 5000 per hour total (and 30 per minute for search API)
-* Github search API: https://developer.github.com/v3/search/
-
-
-## Clone set of GitHub repo: _github-clone-repos.py_
-
-Clones many repos.
-
-
+These are some useful scripts that I use in teaching.
 
 ## Manage GIT-based Assignment Submissions:  _git-assignment-submissions.py_
 
@@ -82,3 +65,21 @@ To copy just the new zip files:
 ```
 rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project-4/zip-submissions/
 ```
+
+
+
+## Scrape Github for repo info: _github-scrape.py_
+
+It collects information in csv files on various searches.
+
+* Uses [PyGithub]()https://github.com/PyGithub/PyGithub) Github API.
+
+* Github searches: https://help.github.com/articles/searching-code/
+* Github search limits: https://developer.github.com/v3/search/#rate-limit
+    * 5000 per hour total (and 30 per minute for search API)
+* Github search API: https://developer.github.com/v3/search/
+
+
+## Clone set of GitHub repo: _github-clone-repos.py_
+
+Clones many repos.

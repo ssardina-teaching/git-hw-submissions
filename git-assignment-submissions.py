@@ -9,6 +9,7 @@ It also produces a file submission_timestamp.csv with all timestamp of the tag f
 """
 import shutil
 import os
+import sys
 import argparse
 import csv
 import logging
@@ -29,13 +30,19 @@ DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
 
 # Extract the timestamp for a given tag in a repo
 def get_tag_time(repo, tag_str):
-    tag_commit = next((tag.commit for tag in repo.tags if tag.name == tag_str), None)
+    tag = next((tag for tag in repo.tags if tag.name == tag_str), None)
 
-    if tag_commit is None:
+    # tag_commit = next((tag.commit for tag in repo.tags if tag.name == tag_str), None)
+    if tag is None:
         return None
     else:
-        tag_date = time.localtime(tag_commit.committed_date)
-        return time.strftime(DATE_FORMAT, tag_date), tag_commit
+        tag_commit = tag.commit
+        tag_commit_date = time.localtime(tag_commit.committed_date)
+        try:
+            tagged_date = time.localtime(tag.object.tagged_date)    # if it is an annotated tag
+        except:
+            tagged_date = tag_commit_date   # if it is a lightweight tag
+        return time.strftime(DATE_FORMAT, tag_commit_date), tag_commit, time.strftime(DATE_FORMAT, tagged_date)
 
 # return timestamps form a csv submission file
 def load_timestamps(timestamp_filename):
@@ -107,10 +114,12 @@ if __name__ == "__main__":
     # Open the submission file for writing
     if add_timestamps:
         submission_timestamps_file = open(timestamps_file, 'a')
-        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+        submission_writer = csv.DictWriter(submission_timestamps_file,
+                                           fieldnames=['team', 'submitted_at', 'commit', 'tagged_at'])
     else:
         submission_timestamps_file = open(timestamps_file, 'w')
-        submission_writer = csv.DictWriter(submission_timestamps_file, fieldnames=['team', 'submitted_at', 'commit'])
+        submission_writer = csv.DictWriter(submission_timestamps_file,
+                                           fieldnames=['team', 'submitted_at', 'commit', 'tagged_at'])
         submission_writer.writeheader()
 
 
@@ -139,14 +148,17 @@ if __name__ == "__main__":
                 logging.warning('Repo for team {} with tag {} cannot be cloned: {}'.
                                 format(team_name, submission_tag, e.stderr))
                 continue
-            submission_time, submission_commit = get_tag_time(repo, submission_tag)
+            except KeyboardInterrupt:
+                logging.warning('Script terminated via Keyboard Interrupt; finishing...')
+                sys.exit("keyboard interrupted!")
+            submission_time, submission_commit, tagged_time = get_tag_time(repo, submission_tag)
             print('\t\t Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
             team_new.append(team_name)
         else:   # OK, so there is already a directory for this team in local repo, check if there is an update
             try:
                 # First get the timestamp of the local repository for the team
                 repo = git.Repo(git_local_dir)
-                submission_time_local, _ = get_tag_time(repo, submission_tag)
+                submission_time_local, _, _ = get_tag_time(repo, submission_tag)
                 if submission_time_local is None:
                     print('\t No tag {} in the repository, strange as it was already there...'.format(submission_tag))
                 else:
@@ -155,7 +167,7 @@ if __name__ == "__main__":
 
                 # Next, update the repo to check if there is a new updated submission time for submission tag
                 repo.remote('origin').fetch(tags=True)
-                submission_time, submission_commit = get_tag_time(repo, submission_tag)
+                submission_time, submission_commit, tagged_time = get_tag_time(repo, submission_tag)
                 if submission_time is None: # submission_tag has been deleted! remove local repo, no more submission
                     team_missing.append(team_name)
                     print('\t No tag {} in the repository for team {} anymore; removing it...'.format(submission_tag,
@@ -168,7 +180,7 @@ if __name__ == "__main__":
 
                 # Now processs timestamp to report new or unchanged repo
                 if submission_time == submission_time_local:
-                    print('\t\t Team {} submission has not changed.'.format(team_name, submission_time))
+                    print('\t\t Team {} submission has not changed.'.format(team_name))
                     team_unchanged.append(team_name)
                 else:
                     print('\t Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
@@ -179,6 +191,9 @@ if __name__ == "__main__":
                     print('\n')
                     shutil.rmtree(git_local_dir)
                     continue
+            except KeyboardInterrupt:
+                    logging.warning('Script terminated via Keyboard Interrupt; finishing...')
+                    sys.exit(1)
             except:
                     team_missing.append(team_name)
                     logging.warning('\t Local repo {} is problematic; removing it...'.format(git_local_dir))
@@ -188,7 +203,7 @@ if __name__ == "__main__":
                     continue
         # Finally, write team into submission timestamp file
         submission_writer.writerow(
-            {'team': team_name, 'submitted_at': submission_time, 'commit': submission_commit})
+            {'team': team_name, 'submitted_at': submission_time, 'commit': submission_commit, 'tagged_at': tagged_time})
 
                     # local copy already exists - needs to update it maybe tag is newer
 
