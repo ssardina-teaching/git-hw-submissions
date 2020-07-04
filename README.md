@@ -1,10 +1,25 @@
-# Various Support Scripts for Teaching
+# Support Scripts for Teaching
 
 These are some useful scripts that I use in teaching.
 
-## Manage GIT-based Assignment Submissions:  _git-assignment-submissions.py_
+## `git-assignment-submissions.py`: Clone GIT-based Homework Submissions:  
 
-This script manages assignment submissions done via GIT repositories using tags.
+This script clones a set of student/team repositories listed in a CSV file at a given _tagged_ commit.  The CVS file should contain the team name (under column name `TEAM`) and a GIT ssh link (under column name `GIT-URL`).
+
+If a repository already exists, it will be _updated_ automatically:
+ 
+ * if the tag changed to a different commit, the new commit will be pulled;
+ * if the repo does not have the tag anymore (the student has withdraw the submission), the local copy will be removed from disk.
+ 
+At the end, the script produces a CSV file with the information of each repo successfully cloned, including commit id (`commit`), time of the commit (`submitted_at`), and time of the tagging (`tagged_at`).  
+
+The script depends on the `git` module:
+
+```bash
+pip3 install gitpython --user
+```
+
+To use it:
 
 ```
 usage: git-assignment-submissions.py [-h] [--team TEAM]
@@ -30,7 +45,8 @@ optional arguments:
 For example:
 
 ```
-python3 git-assignment-submissions.py ai18-repos.csv submission-1 git-submissions/
+python3 git-assignment-submissions.py --file-timestamps test/submissions_timestamps.csv \
+    test/team-url.csv submission-3 test/repos/
 ```
 
 This will download all submissions of teams listed in csv file `ai18-repos.csv` using tag `submission-1`
