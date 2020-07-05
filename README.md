@@ -8,6 +8,7 @@ These are some useful scripts that I use in teaching:
 * `gh_clone_repos.py`: Clones set of GitHub repo.
 * `process_ai_teams.py`
 
+All this scripts are in Python 3.5+.
 
 ## Extract repos from a GitHub Classroom/Organization
 
@@ -26,21 +27,24 @@ The script requires a username and its password or file with GitHub access token
 For example:
 
 ```bash
-python3 gh_classroom_collect.py -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt COSC1127 project-1 repos.csv 
+python3 gh_classroom_collect.py --team-map test/cosc1127-map.csv  -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt RMIT-COSC1127-1125-AI project-0-tutorial test/cosc1127-repos.csv
 ```
 
-Will extract the information on all repositores in the GitHub classroom under organization `COSC1127` for the assignment name `project-1` and save the info on file `repos.csv` that may look as follows:
+This will produce a CSV of this form:
 
 ```csv
-ORG_NAME,ASSIGNMENT,USER,GITHUB-NAME,GIT-URL
-COSC1127,jflap,mark,COSC1127/jflap-mark,git@github.com:COSC1127/jflap-mark.git
-COSC1127,jflap,plinda,COSC1127/jflap-plinda,git@github.com:COSC1127/jflap-plinda.git
-COSC1127,jflap,scg,COSC1127/jflap-scg,git@github.com:COSC1127/jflap-scg.git
+ORG_NAME,ASSIGNMENT,USERNAME,TEAM,REPO-NAME,GIT-URL
+RMIT-COSC1127-1125-AI,project-0-tutorial,msardina,boca,RMIT-COSC1127-1125-AI/project-0-tutorial-msardina,git@github.com:RMIT-COSC1127-1125-AI/project-0-tutorial-msardina.git
+...
+...
 ```
 
-This corresponds to three repos submitted for assignment `jflap` in GitHub Organization/Classroom `COSC1127`, under Github username `mark`, `plinda`, and `scg`.
+Now, with such CSV file we can clone the corresponding repos at tag `project-0` into `test/repos` using the script `git_clone_submissions.py` (see below):
+ 
+```bash
+python3 git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv test/cosc1127-repos.csv project-0 test/repos/
+```
 
-The resulting CSV file can be used to clone repos with the `git_clone_submissions.py` script (see below).
 
 
 ## Clone GIT-based Homework Submissions:  
@@ -54,7 +58,7 @@ If a repository already exists, it will be _updated_ automatically:
  
 At the end, the script produces a CSV file with the information of each repo successfully cloned, including commit id (`commit`), time of the commit (`submitted_at`), and time of the tagging (`tagged_at`).  
 
-The script depends on the `git` module:
+The script depends on the [GitPython](https://gitpython.readthedocs.io) module:
 
 ```bash
 pip3 install gitpython --user
@@ -62,17 +66,19 @@ pip3 install gitpython --user
 
 To use it:
 
-```
+```bash
 usage: git_clone_submissions.py [-h] [--team TEAM]
-                                     [--file-timestamps FILE_TIMESTAMPS]
-                                     team_csv_file tag_str output_folder
+                                [--file-timestamps FILE_TIMESTAMPS]
+                                [--add-timestamps]
+                                team_csv_file tag_str output_folder
 
 Clone a list of GIT repositories containing assignment submissions via a tag.
 
 positional arguments:
   team_csv_file         csv file containing the URL git repo for each team
                         (must contain two named columns: TEAM and GIT-URL).
-  tag_str               commit tag representing a submission.
+  tag_str               commit tag to clone (use "master" for latest commit at
+                        master).
   output_folder         the folder where to clone all repositories.
 
 optional arguments:
@@ -81,6 +87,7 @@ optional arguments:
   --file-timestamps FILE_TIMESTAMPS
                         filename to store the timestamps of submissions
                         (default: submissions_timestamps.csv).
+  --add-timestamps      append to the timestamps file.
 ```
 
 For example:
@@ -90,8 +97,7 @@ python3 git-assignment-submissions.py --file-timestamps test/submissions_timesta
     test/team-url.csv submission-3 test/repos/
 ```
 
-This will download all submissions of teams listed in csv file `ai18-repos.csv` using tag `submission-1`
-and save them in directory `git-submissions/`. A file `submissions_timestamps.csv' with the timestamps and commits of each repo cloned successfully.
+This will download all submissions of teams listed in csv file `ai18-repos.csv` using tag `submission-1` and save them in directory `git-submissions/`. A file `submissions_timestamps.csv' with the timestamps and commits of each repo cloned successfully.
 
 If one already has a `submissions_timestamps.csv' (from previous downloads) or want to use a different name, one can use option `--file-timestamps`.
 
