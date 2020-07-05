@@ -4,6 +4,9 @@ Script to obtain all the repositories from a GitHub Classroom
 
 Uses PyGihub (https://github.com/PyGithub/PyGithub) as API to GitHub
 
+Some usage help on PyGithub:
+    https://www.thepythoncode.com/article/using-github-api-in-python
+
 """
 #
 # Script obtained from: https://gist.github.com/robwhess/48547bf369ccf422cca78e5753b5a1c7
@@ -70,19 +73,36 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
     parser.add_argument('-p', '--password', help="GitHub username's password.")
+    parser.add_argument('-m', '--team-map', help="CSV file with maps team name - GitHub user.")
     args = parser.parse_args()
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))
 
-    if args.token_file:
-        with open(args.token_file) as fh:
-            token = fh.read().strip()
-        g = Github(token)
-    elif args.user and args.password:
-        g = Github(args.user, args.password)
-    else:
-        logging.error('No authentication provided, quitting....')
+    try:
+        if args.token_file:
+            with open(args.token_file) as fh:
+                token = fh.read().strip()
+            g = Github(token)
+        elif args.user and args.password:
+            g = Github(args.user, args.password)
+        else:
+            logging.error('No authentication provided, quitting....')
+            exit(1)
+    except:
+        logging.error("Something wrong happened during GitHub authentication. Check credentials.")
         exit(1)
+
+    # Populate user to team name mapping dictionary if CSV map was provided
+    user_to_team_map = dict()
+    if args.team_map:
+        with open(args.team_map, 'r') as file:
+            csv_content = csv.DictReader(file)
+            for row in csv_content:
+                row = dict(row)
+                user_to_team_map[row['USERNAME']] = row['TEAM']
+    else:
+        logging.info('No GitHub to Team name mapping provided. Using username as team names.')
+
 
     logging.info(
         'Dumping repos in organization *{}* for assignment *{}* into CSV file *{}*.'.format(args.ORG_NAME,
@@ -98,15 +118,22 @@ if __name__ == '__main__':
         match = re.match(REPO_URL_PATTERN, repo.full_name)
         if match:
             # repo_url = 'git@github.com:{}'.format(repo.full_name)
-            repos_select.append({'USER': match.group(1), 'GITHUB-NAME': repo.full_name, 'GIT-URL': repo.ssh_url})
+            repos_select.append({'USERNAME': match.group(1), 'REPO-NAME': repo.full_name, 'GIT-URL': repo.ssh_url})
 
-    # Produce CSV file with all repos if requested via option --csv
-    logging.info('List of repos save to CSV file *{}*.'.format(args.CSV))
-    f = open(args.CSV, 'w')
-    csv_writer = csv.DictWriter(f, fieldnames=['ORG_NAME', 'ASSIGNMENT', 'USER', 'GITHUB-NAME', 'GIT-URL'])
-    csv_writer.writeheader()
-    for r in repos_select:
-        r['ORG_NAME'] = args.ORG_NAME
-        r['ASSIGNMENT'] = args.ASSIGNMENT_PREFIX
-        csv_writer.writerow(r)
-    f.close()
+    # Produce CSV file output with all repos if requested via option --csv
+    logging.info('List of repos will be saved to CSV file *{}*.'.format(args.CSV))
+    with open(args.CSV, 'w') as output_csv_file:
+        csv_writer = csv.DictWriter(output_csv_file,
+                                    fieldnames=['ORG_NAME', 'ASSIGNMENT', 'USERNAME', 'TEAM', 'REPO-NAME', 'GIT-URL'])
+        csv_writer.writeheader()
+
+        # for each repo in repo_select produce a row in the CSV file, add the team name from mapping
+        for row in repos_select:
+            if row['USERNAME'] in user_to_team_map.keys():
+                row['TEAM'] = user_to_team_map[row['USERNAME']]
+            else:
+                row['TEAM'] = row['USERNAME']
+
+            row['ORG_NAME'] = args.ORG_NAME
+            row['ASSIGNMENT'] = args.ASSIGNMENT_PREFIX
+            csv_writer.writerow(row)
