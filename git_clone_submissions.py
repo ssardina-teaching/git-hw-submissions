@@ -13,8 +13,6 @@ import sys
 import argparse
 import csv
 import logging
-# import iso8601
-# from pytz import timezone
 import traceback
 import time
 

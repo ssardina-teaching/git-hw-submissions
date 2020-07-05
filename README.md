@@ -1,10 +1,51 @@
-# Support Scripts for Teaching
+# Submission Management Support Scripts 
 
-These are some useful scripts that I use in teaching.
+These are some useful scripts that I use in teaching:
 
-## `git-assignment-submissions.py`: Clone GIT-based Homework Submissions:  
+* `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment.
+* `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
+* `gh_scrape_scrape.py`: Scrape Github for repo info via searches.
+* `gh_clone_repos.py`: Clones set of GitHub repo.
+* `process_ai_teams.py`
 
-This script clones a set of student/team repositories listed in a CSV file at a given _tagged_ commit.  The CVS file should contain the team name (under column name `TEAM`) and a GIT ssh link (under column name `GIT-URL`).
+
+## Extract repos from a GitHub Classroom/Organization
+
+The script `gh_classroom_collect.py` produces a CSV file with all the repos in a given GitHub Classroom for a particular assignment.
+
+The CSV file produced, for each repo, the following information:
+
+* the organization name of the GitHub classroom;
+* the assignment prefix name;
+* the user of the repo;
+* the GitHub name of the repo; and
+* the full SSH git URL specification.
+
+The script requires a username and its password or file with GitHub access token that allows access to the organization.
+
+For example:
+
+```bash
+python3 gh_classroom_collect.py -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt COSC1127 project-1 repos.csv 
+```
+
+Will extract the information on all repositores in the GitHub classroom under organization `COSC1127` for the assignment name `project-1` and save the info on file `repos.csv` that may look as follows:
+
+```csv
+ORG_NAME,ASSIGNMENT,USER,GITHUB-NAME,GIT-URL
+COSC1127,jflap,mark,COSC1127/jflap-mark,git@github.com:COSC1127/jflap-mark.git
+COSC1127,jflap,plinda,COSC1127/jflap-plinda,git@github.com:COSC1127/jflap-plinda.git
+COSC1127,jflap,scg,COSC1127/jflap-scg,git@github.com:COSC1127/jflap-scg.git
+```
+
+This corresponds to three repos submitted for assignment `jflap` in GitHub Organization/Classroom `COSC1127`, under Github username `mark`, `plinda`, and `scg`.
+
+The resulting CSV file can be used to clone repos with the `git_clone_submissions.py` script (see below).
+
+
+## Clone GIT-based Homework Submissions:  
+
+Script `git_clone_submissions.py` clones a set of student/team repositories listed in a CSV file at a given _tagged_ commit.  The CVS file should contain the team name (under column name `TEAM`) and a GIT ssh link (under column name `GIT-URL`).
 
 If a repository already exists, it will be _updated_ automatically:
  
@@ -22,11 +63,11 @@ pip3 install gitpython --user
 To use it:
 
 ```
-usage: git-assignment-submissions.py [-h] [--team TEAM]
+usage: git_clone_submissions.py [-h] [--team TEAM]
                                      [--file-timestamps FILE_TIMESTAMPS]
                                      team_csv_file tag_str output_folder
 
-Clone a list of GIT repositories contatining assignment submissions via a tag.
+Clone a list of GIT repositories containing assignment submissions via a tag.
 
 positional arguments:
   team_csv_file         csv file containing the URL git repo for each team
@@ -84,11 +125,11 @@ rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project
 
 
 
-## Scrape Github for repo info: _github-scrape.py_
+## Scrape Github repositories
 
-It collects information in csv files on various searches.
+It collects information in CSV files on various searches.
 
-* Uses [PyGithub]()https://github.com/PyGithub/PyGithub) Github API.
+* Uses [PyGithub](https://github.com/PyGithub/PyGithub) Github API.
 
 * Github searches: https://help.github.com/articles/searching-code/
 * Github search limits: https://developer.github.com/v3/search/#rate-limit
@@ -96,6 +137,6 @@ It collects information in csv files on various searches.
 * Github search API: https://developer.github.com/v3/search/
 
 
-## Clone set of GitHub repo: _github-clone-repos.py_
+## Clone set of GitHub repo
 
-Clones many repos.
+Script `gh_clone_repos.py` clones a list of GitHub repos given in a CSV file.

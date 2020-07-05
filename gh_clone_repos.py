@@ -18,7 +18,7 @@ if __name__ == "__main__":
         print('ERROR: Sorry, you have to specify an input csv file')
         exit(1)
 
-    print("This script will clone a list of GitHub repos form file: %s" % args.repos_csv)
+    print("This script will clone a list of GitHub repos from file: %s" % args.repos_csv)
 
     github_repos = []
     repo_file = open(args.repos_csv, 'r')
@@ -35,5 +35,5 @@ if __name__ == "__main__":
             print("\t Repo already cloned, skipping....")
         else:
             cmd = "git clone %s %s" % (repo[1], repo[0])
-            print("Cloneing: %s" %cmd)
+            print("Cloning: %s" %cmd)
             os.system(cmd)

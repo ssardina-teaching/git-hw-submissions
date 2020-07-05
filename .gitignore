@@ -75,3 +75,5 @@ zip-submissions*
 github-repos
 link-*
 *.bak
+test
+.idea
