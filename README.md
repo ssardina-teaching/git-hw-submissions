@@ -41,11 +41,11 @@ RMIT-COSC1127-1125-AI,project-0-tutorial,msardina,boca,RMIT-COSC1127-1125-AI/pro
 ...
 ```
 
-Now, with such CSV file we can clone the corresponding repos at tag `project-0` into `test/repos` using the script `git_clone_submissions.py` (see below):
+Now, with such CSV file we can clone the corresponding repos at tag `submission` into `test/repos` using the script `git_clone_submissions.py` (see below):
  
 ```bash
 python3 git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv \
-      test/cosc1127-repos.csv project-0 test/repos/
+      test/cosc1127-repos.csv submission test/repos/
 ```
 
 
