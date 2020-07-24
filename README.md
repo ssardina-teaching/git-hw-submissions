@@ -27,7 +27,9 @@ The script requires a username and its password or file with GitHub access token
 For example:
 
 ```bash
-python3 gh_classroom_collect.py --team-map test/cosc1127-map.csv  -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt RMIT-COSC1127-1125-AI project-0-tutorial test/cosc1127-repos.csv
+python3 gh_classroom_collect.py --team-map test/cosc1127-map.csv \
+     -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt \
+     RMIT-COSC1127-1125-AI project-0-tutorial test/cosc1127-repos.csv
 ```
 
 This will produce a CSV of this form:
@@ -42,7 +44,8 @@ RMIT-COSC1127-1125-AI,project-0-tutorial,msardina,boca,RMIT-COSC1127-1125-AI/pro
 Now, with such CSV file we can clone the corresponding repos at tag `project-0` into `test/repos` using the script `git_clone_submissions.py` (see below):
  
 ```bash
-python3 git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv test/cosc1127-repos.csv project-0 test/repos/
+python3 git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv \
+      test/cosc1127-repos.csv project-0 test/repos/
 ```
 
 
