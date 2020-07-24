@@ -113,11 +113,12 @@ def clone_team_repos(list_teams, tag_str, output_folder):
     no_teams = len(list_teams)
     list_teams.sort(key=lambda tup: tup['TEAM'].lower())  # sort the list of teams
     logging.info('About to clone {} repo teams into folder {}/.'.format(no_teams, output_folder))
-    team_new = []
-    team_missing = []
-    team_unchanged = []
-    team_updated = []
+    teams_new = []
+    teams_missing = []
+    teams_unchanged = []
+    teams_updated = []
     teams_cloned = []
+    teams_notag = []
     for c, row in enumerate(list_teams, 1):
         print('\n')
         logging.info('Processing {}/{} team **{}** in git url {}.'.format(c, no_teams, row['TEAM'], row['GIT-URL']))
@@ -129,18 +130,32 @@ def clone_team_repos(list_teams, tag_str, output_folder):
         if not os.path.exists(git_local_dir):  # if there is NOT already a local repo for the team
             logging.info('Trying to clone NEW team repo from URL {}.'.format(git_url))
             try:
+                git.Repo()
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=tag_str)
             except git.GitCommandError as e:
-                team_missing.append(team_name)
-                logging.warning('Repo for team {} with tag {} cannot be cloned: {}'.
+                teams_missing.append(team_name)
+                logging.warning('Repo for team {} with tag/branch {} cannot be cloned: {}'.
                                 format(team_name, tag_str, e.stderr))
                 continue
             except KeyboardInterrupt:
                 logging.warning('Script terminated via Keyboard Interrupt; finishing...')
                 sys.exit("keyboard interrupted!")
-            submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
-            logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
-            team_new.append(team_name)
+
+            try:
+                submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
+                logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
+                teams_new.append(team_name)
+            except TypeError as e:
+                logging.warning('Repo for team {} was cloned byt has no tag {}, removing it...: {}'.
+                                format(team_name, tag_str, e))
+                shutil.rmtree(git_local_dir)
+                teams_notag.append(team_name)
+                continue
+            except Exception as e:
+                logging.error(
+                    'Repo for team {} cloned but unknown error when getting tag {}; should not happen. Stopping... {}'.
+                        format(team_name, tag_str, e))
+                exit(1)
         else:  # OK, so there is already a directory for this team in local repo, check if there is an update
             try:
                 # First get the timestamp of the local repository for the team
@@ -153,7 +168,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 repo.remote('origin').fetch(tags=True)
                 submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
                 if submission_time is None:  # tag has been deleted! remove local repo, no more submission
-                    team_missing.append(team_name)
+                    teams_missing.append(team_name)
                     logging.info('No tag {} in the repository for team {} anymore; removing it...'.format(tag_str,
                                                                                                           team_name))
                     shutil.rmtree(git_local_dir)
@@ -165,12 +180,12 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 # Now processs timestamp to report new or unchanged repo
                 if submission_time == submission_time_local:
                     logging.info('Team {} submission has not changed.'.format(team_name))
-                    team_unchanged.append(team_name)
+                    teams_unchanged.append(team_name)
                 else:
                     logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
-                    team_updated.append(team_name)
+                    teams_updated.append(team_name)
             except git.GitCommandError as e:
-                team_missing.append(team_name)
+                teams_missing.append(team_name)
                 logging.warning('Problem with existing repo for team {}; removing it: {}'.format(team_name, e.stderr))
                 print('\n')
                 shutil.rmtree(git_local_dir)
@@ -179,7 +194,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 logging.warning('Script terminated via Keyboard Interrupt; finishing...')
                 sys.exit(1)
             except: # catch-all
-                team_missing.append(team_name)
+                teams_missing.append(team_name)
                 logging.warning('\t Local repo {} is problematic; removing it...'.format(git_local_dir))
                 print(traceback.print_exc())
                 print('\n')
@@ -193,7 +208,20 @@ def clone_team_repos(list_teams, tag_str, output_folder):
              'tag': tag_str,
              'tagged_at': tagged_time})
 
-    return teams_cloned, team_new, team_updated, team_unchanged, team_missing
+    return teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag
+
+
+def report_teams(type, teams):
+    '''
+    Print the name of the teams for the class type
+
+    :param type: string with the name of the class (new, updated, missing, etc.)
+    :param teams: a list of team names
+    :return:
+    '''
+    print('{}: {}'.format(type, len(teams)))
+    for t in teams:
+        print("\t {}".format(t))
 
 
 if __name__ == "__main__":
@@ -245,8 +273,9 @@ if __name__ == "__main__":
         shutil.copy(submission_timestamps_file, submission_timestamps_file + '.bak')
 
     # Perform the ACTUAL CLONING of all teams in list_teams
-    teams_cloned, team_new, team_updated, team_unchanged, team_missing = clone_team_repos(list_teams, submission_tag,
-                                                                                          output_folder)
+    teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag = clone_team_repos(list_teams,
+                                                                                                           submission_tag,
+                                                                                                           output_folder)
 
     # Write the submission timestamp file
     if add_timestamps:  # we just append to the file
@@ -261,16 +290,12 @@ if __name__ == "__main__":
 
     # produce report of what was cloned
     print("\n ============================================== \n")
-    print('NEW TEAMS: {}'.format(len(team_new)))
-    for t in team_new:
-        print("\t {}".format(t))
-    print('UPDATED TEAMS: {}'.format(len(team_updated)))
-    for t in team_updated:
-        print("\t {}".format(t))
-    print('UNCHANGED TEAMS: {}'.format(len(team_unchanged)))
-    for t in team_unchanged:
-        print("\t {}".format(t))
-    print('TEAMS MISSING (or not cloned successfully): ({})'.format(len(team_missing)))
-    for t in team_missing:
-        print("\t {}".format(t))
+    report_teams('NEW TEAMS', teams_new)
+    report_teams('UPDATED TEAMS', teams_updated)
+    report_teams('UNCHANGED TEAMS', teams_unchanged)
+    report_teams('TEAMS MISSING (or not cloned successfully)', teams_missing)
+    report_teams('TEAMS WITH NO TAG', teams_notag)
     print("\n ============================================== \n")
+
+
+
