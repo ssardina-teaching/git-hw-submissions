@@ -88,13 +88,13 @@ def get_teams_from_csv(csv_file, team=None):
     teams_file = open(csv_file, 'r')
     # Get the list of teams with their GIT URL from csv file
     teams_reader = csv.DictReader(teams_file, delimiter=',')
-    list_teams = list(teams_reader)
+    teams = list(teams_reader)
 
     # If there was a specific team given, just keep that one in the list to clone just that
     if team is not None:
-        list_teams = [team for team in list_teams if team['TEAM'] == team]
+        teams = [t for t in teams if t['TEAM'] == team]
 
-    return list_teams
+    return teams
 
 
 def clone_team_repos(list_teams, tag_str, output_folder):
@@ -112,7 +112,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
     """
     no_teams = len(list_teams)
     list_teams.sort(key=lambda tup: tup['TEAM'].lower())  # sort the list of teams
-    logging.info('Database contains {} teams to clone in folder {}/.'.format(no_teams, output_folder))
+    logging.info('About to clone {} repo teams into folder {}/.'.format(no_teams, output_folder))
     team_new = []
     team_missing = []
     team_unchanged = []
