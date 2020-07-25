@@ -2,7 +2,7 @@
 """
 Script to obtain all the repositories from a GitHub Classroom
 
-Uses PyGihub (https://github.com/PyGithub/PyGithub) as API to GitHub
+Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub
 
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
@@ -26,6 +26,9 @@ import re
 from argparse import ArgumentParser
 from github import Github, Repository, Organization
 import logging
+
+CSV_GITHUB_USERNAME="github_username"
+CSV_TEAM_NAME="identifier"
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO,
                     datefmt='%a, %d %b %Y %H:%M:%S')
@@ -66,14 +69,17 @@ def print_repo_info(repo):
 
 if __name__ == '__main__':
     parser = ArgumentParser(
-        description="Extract repos in a GitHub Classroom repositories for a given assignment into a CSV file")
+        description="Extract repos in a GitHub Classroom repositories for a given assignment into a CSV file"
+                    "CSV HEADERS: ORG_NAME, ASSIGNMENT, USERNAME, TEAM, REPO-NAME, GIT-URL")
     parser.add_argument('ORG_NAME', help="Organization name for GitHub Classroom")
     parser.add_argument('ASSIGNMENT_PREFIX', help="Prefix string for the assignment.")
     parser.add_argument('CSV', help="CSV file where to store the set of repo links.")
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
     parser.add_argument('-p', '--password', help="GitHub username's password.")
-    parser.add_argument('-m', '--team-map', help="CSV file with maps team name - GitHub user.")
+    parser.add_argument('-m', '--team-map',
+                        help="CSV file with maps team name ({}) - GitHub user ({}).".format(CSV_TEAM_NAME,
+                                                                                            CSV_GITHUB_USERNAME))
     args = parser.parse_args()
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))
@@ -99,7 +105,7 @@ if __name__ == '__main__':
             csv_content = csv.DictReader(file)
             for row in csv_content:
                 row = dict(row)
-                user_to_team_map[row['USERNAME']] = row['TEAM']
+                user_to_team_map[row[CSV_GITHUB_USERNAME]] = row[CSV_TEAM_NAME]
     else:
         logging.info('No GitHub to Team name mapping provided. Using username as team names.')
 
@@ -118,6 +124,7 @@ if __name__ == '__main__':
         match = re.match(REPO_URL_PATTERN, repo.full_name)
         if match:
             # repo_url = 'git@github.com:{}'.format(repo.full_name)
+            logging.info('Found repo {}'.format(repo.full_name))
             repos_select.append({'USERNAME': match.group(1), 'REPO-NAME': repo.full_name, 'GIT-URL': repo.ssh_url})
 
     # Produce CSV file output with all repos if requested via option --csv
@@ -131,8 +138,6 @@ if __name__ == '__main__':
         for row in repos_select:
             if row['USERNAME'] in user_to_team_map.keys():
                 row['TEAM'] = user_to_team_map[row['USERNAME']]
-            else:
-                row['TEAM'] = row['USERNAME']
 
             row['ORG_NAME'] = args.ORG_NAME
             row['ASSIGNMENT'] = args.ASSIGNMENT_PREFIX
