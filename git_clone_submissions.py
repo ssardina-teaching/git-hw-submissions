@@ -119,11 +119,17 @@ def clone_team_repos(list_teams, tag_str, output_folder):
     teams_updated = []
     teams_cloned = []
     teams_notag = []
+    teams_noteam = []
     for c, row in enumerate(list_teams, 1):
         print('\n')
         logging.info('Processing {}/{} team **{}** in git url {}.'.format(c, no_teams, row['TEAM'], row['GIT-URL']))
 
         team_name = row['TEAM']
+        if not team_name:
+            logging.info('Repository {} does not have a team associated; skipping...'.format(row['USERNAME']))
+            teams_noteam.append(row['USERNAME'])
+            continue
+
         git_url = row['GIT-URL']
         git_local_dir = os.path.join(output_folder, team_name)
 
@@ -146,7 +152,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
                 teams_new.append(team_name)
             except TypeError as e:
-                logging.warning('Repo for team {} was cloned byt has no tag {}, removing it...: {}'.
+                logging.warning('Repo for team {} was cloned but has no tag {}, removing it...: {}'.
                                 format(team_name, tag_str, e))
                 shutil.rmtree(git_local_dir)
                 teams_notag.append(team_name)
@@ -208,7 +214,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
              'tag': tag_str,
              'tagged_at': tagged_time})
 
-    return teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag
+    return teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam
 
 
 def report_teams(type, teams):
@@ -273,9 +279,10 @@ if __name__ == "__main__":
         shutil.copy(submission_timestamps_file, submission_timestamps_file + '.bak')
 
     # Perform the ACTUAL CLONING of all teams in list_teams
-    teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag = clone_team_repos(list_teams,
-                                                                                                           submission_tag,
-                                                                                                           output_folder)
+    teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam = clone_team_repos(
+        list_teams,
+        submission_tag,
+        output_folder)
 
     # Write the submission timestamp file
     if add_timestamps:  # we just append to the file
@@ -295,6 +302,7 @@ if __name__ == "__main__":
     report_teams('UNCHANGED TEAMS', teams_unchanged)
     report_teams('TEAMS MISSING (or not cloned successfully)', teams_missing)
     report_teams('TEAMS WITH NO TAG', teams_notag)
+    report_teams('REPOS WITH NO TEAM', teams_noteam)
     print("\n ============================================== \n")
 
 
