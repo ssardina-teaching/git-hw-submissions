@@ -20,11 +20,11 @@ Some usage help on PyGithub:
 #
 import base64
 import csv
-import os
 import re
+import traceback
 
 from argparse import ArgumentParser
-from github import Github, Repository, Organization
+from github import Github, Repository, Organization, GithubException
 import logging
 
 CSV_GITHUB_USERNAME="github_username"
@@ -117,8 +117,15 @@ if __name__ == '__main__':
 
 
     # Get the repos of the organization and extract the ones matching the assignment prefix
-    org = g.get_organization(args.ORG_NAME)
-    org_repos = org.get_repos()
+    try:
+        org = g.get_organization(args.ORG_NAME)
+        org_repos = org.get_repos()
+    except GithubException as e:
+        logging.error("There was an error trying to get the repos for organization {} "
+                      "(is the organization spelled correctly?): {}".format(args.ORG_NAME, e.data))
+        traceback.print_exc()
+        exit(1)
+
     repos_select = []
     for repo in org_repos:
         match = re.match(REPO_URL_PATTERN, repo.full_name)
