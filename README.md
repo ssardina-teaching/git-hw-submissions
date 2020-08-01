@@ -8,7 +8,9 @@ These are some useful scripts that I use in teaching:
 * `gh_clone_repos.py`: Clones set of GitHub repo.
 * `process_ai_teams.py`
 
-All this scripts are in Python 3.5+.
+All this scripts were tested under Python 3.6.
+
+
 
 ## Extract repos from a GitHub Classroom/Organization
 
@@ -67,44 +69,25 @@ The script depends on the [GitPython](https://gitpython.readthedocs.io) module:
 pip3 install gitpython --user
 ```
 
-To use it:
+To get all the options, use call the script with option `-h`:
 
 ```bash
-usage: git_clone_submissions.py [-h] [--team TEAM]
-                                [--file-timestamps FILE_TIMESTAMPS]
-                                [--add-timestamps]
-                                team_csv_file tag_str output_folder
-
-Clone a list of GIT repositories containing assignment submissions via a tag.
-
-positional arguments:
-  team_csv_file         csv file containing the URL git repo for each team
-                        (must contain two named columns: TEAM and GIT-URL).
-  tag_str               commit tag to clone (use "master" for latest commit at
-                        master).
-  output_folder         the folder where to clone all repositories.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --team TEAM           to mark a specific team only.
-  --file-timestamps FILE_TIMESTAMPS
-                        filename to store the timestamps of submissions
-                        (default: submissions_timestamps.csv).
-  --add-timestamps      append to the timestamps file.
+usage: git_clone_submissions.py -h
 ```
 
 For example:
 
+```bash
+python3 git_clone_submissions.py --file-timestamps AI20_timestamps.csv \
+    AI20-p0.csv submission p0-repos/ | tee clone-Jul-25.txt
 ```
-python3 git-assignment-submissions.py --file-timestamps test/submissions_timestamps.csv \
-    test/team-url.csv submission-3 test/repos/
-```
 
-This will download all submissions of teams listed in csv file `ai18-repos.csv` using tag `submission-1` and save them in directory `git-submissions/`. A file `submissions_timestamps.csv' with the timestamps and commits of each repo cloned successfully.
+This will download all submissions of teams listed in csv file `AI20-p0.csv` using tag `submission` and save them in directory `p0-repos/`. 
 
-If one already has a `submissions_timestamps.csv' (from previous downloads) or want to use a different name, one can use option `--file-timestamps`.
+A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned successfully.
 
 
+### Some useful commands
 
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
 
@@ -118,7 +101,6 @@ or for the final CTF project:
 for d in git-submissions-p4/*; do echo "============> Processing ${d}" ; zip -q -j "./zip-submissions-p4/`basename "$d.zip"`" "${d}"/pacman-contest/* ;done
 ```
 
-### Some useful commands
 
 To count the number of commits between dates:
 
