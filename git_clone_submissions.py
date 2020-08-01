@@ -136,7 +136,6 @@ def clone_team_repos(list_teams, tag_str, output_folder):
         if not os.path.exists(git_local_dir):  # if there is NOT already a local repo for the team
             logging.info('Trying to clone NEW team repo from URL {}.'.format(git_url))
             try:
-                git.Repo()
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=tag_str)
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
