@@ -89,6 +89,7 @@ def get_teams_from_csv(csv_file, team=None):
     # Get the list of teams with their GIT URL from csv file
     teams_reader = csv.DictReader(teams_file, delimiter=',')
     teams = list(teams_reader)
+    teams_file.close()
 
     # If there was a specific team given, just keep that one in the list to clone just that
     if team is not None:
@@ -137,6 +138,10 @@ def clone_team_repos(list_teams, tag_str, output_folder):
             logging.info('Trying to clone NEW team repo from URL {}.'.format(git_url))
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=tag_str)
+                submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
+                logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
+                teams_new.append(team_name)
+                repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning('Repo for team {} with tag/branch {} cannot be cloned: {}'.
@@ -145,14 +150,10 @@ def clone_team_repos(list_teams, tag_str, output_folder):
             except KeyboardInterrupt:
                 logging.warning('Script terminated via Keyboard Interrupt; finishing...')
                 sys.exit("keyboard interrupted!")
-
-            try:
-                submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
-                logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
-                teams_new.append(team_name)
             except TypeError as e:
                 logging.warning('Repo for team {} was cloned but has no tag {}, removing it...: {}'.
                                 format(team_name, tag_str, e))
+                repo.close()
                 shutil.rmtree(git_local_dir)
                 teams_notag.append(team_name)
                 continue
@@ -160,6 +161,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 logging.error(
                     'Repo for team {} cloned but unknown error when getting tag {}; should not happen. Stopping... {}'.
                         format(team_name, tag_str, e))
+                repo.close()
                 exit(1)
         else:  # OK, so there is already a directory for this team in local repo, check if there is an update
             try:
@@ -176,6 +178,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                     teams_missing.append(team_name)
                     logging.info('No tag {} in the repository for team {} anymore; removing it...'.format(tag_str,
                                                                                                           team_name))
+                    repo.close()
                     shutil.rmtree(git_local_dir)
                     continue
 
@@ -189,20 +192,24 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 else:
                     logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
                     teams_updated.append(team_name)
+                repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning('Problem with existing repo for team {}; removing it: {}'.format(team_name, e.stderr))
                 print('\n')
+                repo.close()
                 shutil.rmtree(git_local_dir)
                 continue
             except KeyboardInterrupt:
                 logging.warning('Script terminated via Keyboard Interrupt; finishing...')
+                repo.close()
                 sys.exit(1)
             except: # catch-all
                 teams_missing.append(team_name)
                 logging.warning('\t Local repo {} is problematic; removing it...'.format(git_local_dir))
                 print(traceback.print_exc())
                 print('\n')
+                repo.close()
                 shutil.rmtree(git_local_dir)
                 continue
         # Finally, write team into submission timestamp file
@@ -255,7 +262,7 @@ if __name__ == "__main__":
         default='submissions_timestamps.csv',
     )
     parser.add_argument(
-        '--add-timestamps',
+        '--append-timestamps',
         help='append to the timestamps file.',
         action='store_true'
     )
@@ -267,7 +274,7 @@ if __name__ == "__main__":
     submission_tag = args.tag_str  # tag to grab when cloning, if any
     output_folder = args.output_folder  # folder where to clone repos
     submission_timestamps_file = args.file_timestamps  # filename to store timestamps
-    add_timestamps = args.add_timestamps  # True if we just append to the timestamp file
+    append_timestamps = args.append_timestamps  # True if we just append to the timestamp file
     team_to_clone = args.team  # the specific team to mark
 
     # Get the list of TEAM + GIT REPO links from csv file
@@ -284,12 +291,9 @@ if __name__ == "__main__":
         output_folder)
 
     # Write the submission timestamp file
-    if add_timestamps:  # we just append to the file
-        f = open(submission_timestamps_file, 'a')
-        submission_writer = csv.DictWriter(f, fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
-    else:
-        f = open(submission_timestamps_file, 'w')
-        submission_writer = csv.DictWriter(f, fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
+    f = open(submission_timestamps_file, 'a' if append_timestamps else 'w')
+    submission_writer = csv.DictWriter(f, fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
+    if not append_timestamps:  # write header only if it is a write (not append)
         submission_writer.writeheader()
     for r in teams_cloned:
         submission_writer.writerow(r)
