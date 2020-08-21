@@ -191,11 +191,9 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 if submission_time == submission_time_local:
                     logging.info('Team {} submission has not changed.'.format(team_name))
                     teams_unchanged.append(team_name)
-                    repo.close()
-                    continue
-
-                logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
-                teams_updated.append(team_name)
+                else:
+                    logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
+                    teams_updated.append(team_name)
                 repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
@@ -216,7 +214,8 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 repo.close()
                 shutil.rmtree(git_local_dir)
                 continue
-        # Finally, write team into submission timestamp file
+
+        # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         teams_cloned.append(
             {'team': team_name,
              'submitted_at': submission_time,
@@ -279,27 +278,24 @@ if __name__ == "__main__":
 
 
     # Write the submission timestamp file
-    if len(teams_cloned) == 0:
-        logging.warning('No team has been cloned; not witting any cvs file!')
-    else:
-        logging.warning('Producing timestamp csv file...')
+    logging.warning('Producing timestamp csv file...')
 
-        # Make a backup of an existing cvs timestamp file if it is about to be updated, and load the existing data there
-        if os.path.exists(args.file_timestamps):
-            shutil.copy(args.file_timestamps, args.file_timestamps + '.bak')
-            teams_csv = list(csv.DictReader(open(args.file_timestamps)))
+    # Make a backup of an existing cvs timestamp file there is one
+    if os.path.exists(args.file_timestamps):
+        shutil.copy(args.file_timestamps, args.file_timestamps + '.bak')
+        teams_csv = list(csv.DictReader(open(args.file_timestamps)))
 
-        with open(args.file_timestamps, 'w') as csv_file:
-            submission_writer = csv.DictWriter(csv_file,
-                                               fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
-            submission_writer.writeheader()
-            if args.team and teams_csv:  # dump any existing timestamp entry that was not the team requested
-                for row in list(teams_csv):
-                    if row['team'] != teams_cloned[0]['team']:
-                        submission_writer.writerow(row)
+    with open(args.file_timestamps, 'w') as csv_file:
+        submission_writer = csv.DictWriter(csv_file,
+                                           fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
+        submission_writer.writeheader()
+        if args.team and teams_csv:  # dump any existing timestamp entry that was not the team requested
+            for row in list(teams_csv):
+                if row['team'] != teams_cloned[0]['team']:
+                    submission_writer.writerow(row)
 
-            # now dump all the teams that have been cloned into the csv timestamp file
-            submission_writer.writerows(teams_cloned)
+        # now dump all the teams that have been cloned into the csv timestamp file
+        submission_writer.writerows(teams_cloned)
 
 
     # produce report of what was cloned
