@@ -9,6 +9,7 @@ It also produces a file submission_timestamp.csv with all timestamp of the tag f
 
 This script uses GitPython module to have Git API: https://gitpython.readthedocs.io/en/stable/tutorial.html
 """
+import datetime
 import shutil
 import os
 import sys
@@ -16,7 +17,8 @@ import argparse
 import csv
 import logging
 import traceback
-import time
+import pytz
+
 
 # https://gitpython.readthedocs.io/en/2.1.9/reference.html
 # http://gitpython.readthedocs.io/en/stable/tutorial.html
@@ -29,6 +31,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logg
                     datefmt='%a, %d %b %Y %H:%M:%S')
 
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
+TIMEZONE = pytz.timezone('Australia/Melbourne')
 
 
 # Extract the timestamp for a given tag in a repo
@@ -50,12 +53,12 @@ def get_tag_info(repo:git.Repo, tag_str):
             return None
         tag_commit = tag.commit
 
-    tag_commit_date = time.localtime(tag_commit.committed_date)
+    tag_commit_date = datetime.datetime.fromtimestamp(tag_commit.committed_date, tz=TIMEZONE)
     try:
-        tagged_date = time.localtime(tag.object.tagged_date)  # if it is an annotated tag
+        tagged_date = datetime.datetime.fromtimestamp(tag.object.tagged_date, tz=TIMEZONE)  # if it is an annotated tag
     except:
-        tagged_date = tag_commit_date  # if it is a lightweight tag
-    return time.strftime(DATE_FORMAT, tag_commit_date), tag_commit, time.strftime(DATE_FORMAT, tagged_date)
+        tagged_date = tag_commit_date  # if it is a lightweight tag (no date stored; https://git-scm.com/book/en/v2/Git-Basics-Tagging)
+    return tag_commit_date.strftime(DATE_FORMAT), tag_commit, tagged_date.strftime(DATE_FORMAT)
 
 
 # return timestamps form a csv submission file
@@ -168,8 +171,7 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 # First get the timestamp of the local repository for the team
                 repo = git.Repo(git_local_dir)
                 submission_time_local, _, _ = get_tag_info(repo, tag_str)
-                logging.info('Existing LOCAL submission for {} dated {}; updating it...'.format(team_name,
-                                                                                                submission_time_local))
+                logging.info(f'Existing LOCAL submission for {team_name} dated {submission_time_local}; updating it...')
 
                 # Next, update the repo to check if there is a new updated submission time for submission tag
                 repo.remote('origin').fetch(tags=True)
@@ -185,13 +187,15 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 # Checkout the repo from server (doesn't matter if there is no update, will stay as is)
                 repo.git.checkout(tag_str)
 
-                # Now processs timestamp to report new or unchanged repo
+                # Now process timestamp to report new or unchanged repo
                 if submission_time == submission_time_local:
                     logging.info('Team {} submission has not changed.'.format(team_name))
                     teams_unchanged.append(team_name)
-                else:
-                    logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
-                    teams_updated.append(team_name)
+                    repo.close()
+                    continue
+
+                logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
+                teams_updated.append(team_name)
                 repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
@@ -254,49 +258,49 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--team',
-        help='to mark a specific team only.'
+        help='if given, only the team specified will be cloned/updated.'
     )
     parser.add_argument(
         '--file-timestamps',
         help='filename to store the timestamps of submissions (default: %(default)s).',
         default='submissions_timestamps.csv',
     )
-    parser.add_argument(
-        '--append-timestamps',
-        help='append to the timestamps file.',
-        action='store_true'
-    )
     # we could also use vars(parser.parse_args()) to make args a dictionary args['<option>']
     args = parser.parse_args()
 
-    # collect all the options given in CLI
-    team_csv_file = args.team_csv_file  # csv file with team git repo links
-    submission_tag = args.tag_str  # tag to grab when cloning, if any
-    output_folder = args.output_folder  # folder where to clone repos
-    submission_timestamps_file = args.file_timestamps  # filename to store timestamps
-    append_timestamps = args.append_timestamps  # True if we just append to the timestamp file
-    team_to_clone = args.team  # the specific team to mark
-
     # Get the list of TEAM + GIT REPO links from csv file
-    list_teams = get_teams_from_csv(team_csv_file, team_to_clone)
-
-    # If a submission csv file exists, make a backup of it as it will be overwritten
-    if os.path.exists(submission_timestamps_file):
-        shutil.copy(submission_timestamps_file, submission_timestamps_file + '.bak')
+    list_teams = get_teams_from_csv(args.team_csv_file, args.team)
 
     # Perform the ACTUAL CLONING of all teams in list_teams
     teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam = clone_team_repos(
         list_teams,
-        submission_tag,
-        output_folder)
+        args.tag_str,
+        args.output_folder)
+
 
     # Write the submission timestamp file
-    f = open(submission_timestamps_file, 'a' if append_timestamps else 'w')
-    submission_writer = csv.DictWriter(f, fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
-    if not append_timestamps:  # write header only if it is a write (not append)
-        submission_writer.writeheader()
-    for r in teams_cloned:
-        submission_writer.writerow(r)
+    if len(teams_cloned) == 0:
+        logging.warning('No team has been cloned; not witting any cvs file!')
+    else:
+        logging.warning('Producing timestamp csv file...')
+
+        # Make a backup of an existing cvs timestamp file if it is about to be updated, and load the existing data there
+        if os.path.exists(args.file_timestamps):
+            shutil.copy(args.file_timestamps, args.file_timestamps + '.bak')
+            teams_csv = list(csv.DictReader(open(args.file_timestamps)))
+
+        with open(args.file_timestamps, 'w') as csv_file:
+            submission_writer = csv.DictWriter(csv_file,
+                                               fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
+            submission_writer.writeheader()
+            if args.team and teams_csv:  # dump any existing timestamp entry that was not the team requested
+                for row in list(teams_csv):
+                    if row['team'] != teams_cloned[0]['team']:
+                        submission_writer.writerow(row)
+
+            # now dump all the teams that have been cloned into the csv timestamp file
+            submission_writer.writerows(teams_cloned)
+
 
     # produce report of what was cloned
     print("\n ============================================== \n")
