@@ -144,7 +144,6 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
                 logging.info('Team {} cloned successfully with tag date {}.'.format(team_name, submission_time))
                 teams_new.append(team_name)
-                repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning('Repo for team {} with tag/branch {} cannot be cloned: {}'.
@@ -184,8 +183,9 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                     shutil.rmtree(git_local_dir)
                     continue
 
-                # Checkout the repo from server (doesn't matter if there is no update, will stay as is)
+                # Checkout the submission tag (doesn't matter if there is no update, will stay as is)
                 repo.git.checkout(tag_str)
+
 
                 # Now process timestamp to report new or unchanged repo
                 if submission_time == submission_time_local:
@@ -194,7 +194,6 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 else:
                     logging.info('Team {} updated successfully with new tag date {}'.format(team_name, submission_time))
                     teams_updated.append(team_name)
-                repo.close()
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning('Problem with existing repo for team {}; removing it: {}'.format(team_name, e.stderr))
@@ -215,14 +214,18 @@ def clone_team_repos(list_teams, tag_str, output_folder):
                 shutil.rmtree(git_local_dir)
                 continue
 
+        no_commits = repo.git.rev_list('--count', tag_str)
+        repo.close()
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         teams_cloned.append(
             {'team': team_name,
              'submitted_at': submission_time,
              'commit': submission_commit,
              'tag': tag_str,
-             'tagged_at': tagged_time})
+             'tagged_at': tagged_time,
+             'no_commits': no_commits})
 
+    # the end....
     return teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam
 
 
@@ -287,7 +290,8 @@ if __name__ == "__main__":
 
     with open(args.file_timestamps, 'w') as csv_file:
         submission_writer = csv.DictWriter(csv_file,
-                                           fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at'])
+                                           fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at',
+                                                       'no_commits'])
         submission_writer.writeheader()
         if args.team and teams_csv:  # dump any existing timestamp entry that was not the team requested
             for row in list(teams_csv):
