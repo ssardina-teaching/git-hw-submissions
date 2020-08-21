@@ -84,8 +84,7 @@ python3 git_clone_submissions.py --file-timestamps AI20_timestamps.csv \
 
 This will download all submissions of teams listed in csv file `AI20-p0.csv` using tag `submission` and save them in directory `p0-repos/`. 
 
-A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned successfully.
-
+A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned successfully. The timezone used is defined by constant `TIMEZONE` in the script (default to Australia/Melbourne time zone).
 
 ### Some useful commands
 
