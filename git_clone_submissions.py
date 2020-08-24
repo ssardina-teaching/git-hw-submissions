@@ -8,6 +8,8 @@ output directory.
 It also produces a file submission_timestamp.csv with all timestamp of the tag for the successful repo cloned/updated.
 
 This script uses GitPython module to have Git API: https://gitpython.readthedocs.io/en/stable/tutorial.html
+
+    Sebastian Sardina 2020 - ssardina@gmail.com
 """
 import datetime
 import shutil
@@ -273,6 +275,10 @@ if __name__ == "__main__":
     # Get the list of TEAM + GIT REPO links from csv file
     list_teams = get_teams_from_csv(args.team_csv_file, args.team)
 
+    if len(list_teams) == 0:
+        logging.warning(f'No teams found in the mapping file "{args.team_csv_file}". Stopping.')
+        exit(0)
+
     # Perform the ACTUAL CLONING of all teams in list_teams
     teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam = clone_team_repos(
         list_teams,
@@ -285,7 +291,8 @@ if __name__ == "__main__":
 
     # Make a backup of an existing cvs timestamp file there is one
     if os.path.exists(args.file_timestamps):
-        shutil.copy(args.file_timestamps, args.file_timestamps + '.bak')
+        time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        shutil.copy(args.file_timestamps, f'{args.file_timestamps}-{time_now}.bak')
         teams_csv = list(csv.DictReader(open(args.file_timestamps)))
 
     with open(args.file_timestamps, 'w') as csv_file:

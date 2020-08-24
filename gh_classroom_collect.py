@@ -7,6 +7,8 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 
+    Sebastian Sardina 2020 - ssardina@gmail.com
+
 """
 #
 # Script obtained from: https://gist.github.com/robwhess/48547bf369ccf422cca78e5753b5a1c7
@@ -77,9 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
     parser.add_argument('-p', '--password', help="GitHub username's password.")
-    parser.add_argument('-m', '--team-map',
-                        help="CSV file with maps team name ({}) - GitHub user ({}).".format(CSV_TEAM_NAME,
-                                                                                            CSV_GITHUB_USERNAME))
+    parser.add_argument('-m', '--team-map', help=f"CSV file mapping team/student id - GitHub user/team.")
     args = parser.parse_args()
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))

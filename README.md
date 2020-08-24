@@ -114,10 +114,13 @@ rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project
 ```
 
 
+## Other scripts
 
-## Scrape Github repositories
+Under [other-scripts/](other-scripts) folder.
 
-It collects information in CSV files on various searches.
+### Scrape Github repositories
+
+Script `gh_scrape.py` collects information in CSV files on various searches.
 
 * Uses [PyGithub](https://github.com/PyGithub/PyGithub) Github API.
 
@@ -127,6 +130,11 @@ It collects information in CSV files on various searches.
 * Github search API: https://developer.github.com/v3/search/
 
 
-## Clone set of GitHub repo
+### Clone set of GitHub repo
 
 Script `gh_clone_repos.py` clones a list of GitHub repos given in a CSV file.
+
+### GitHub Classroom script
+
+Various manipulation commands for GitHub classrrom.
+
