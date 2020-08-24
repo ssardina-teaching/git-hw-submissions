@@ -79,7 +79,8 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
     parser.add_argument('-p', '--password', help="GitHub username's password.")
-    parser.add_argument('-m', '--team-map', help=f"CSV file mapping team/student id - GitHub user/team.")
+    parser.add_argument('-m', '--team-map', help=f"CSV file mapping team/student id ({CSV_TEAM_NAME}) - "
+                                                 f"GitHub user/team ({CSV_GITHUB_USERNAME}).")
     args = parser.parse_args()
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))
