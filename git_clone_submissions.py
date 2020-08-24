@@ -291,7 +291,7 @@ if __name__ == "__main__":
 
     # Make a backup of an existing cvs timestamp file there is one
     if os.path.exists(args.file_timestamps):
-        time_now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        time_now = datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
         shutil.copy(args.file_timestamps, f'{args.file_timestamps}-{time_now}.bak')
         teams_csv = list(csv.DictReader(open(args.file_timestamps)))
 
