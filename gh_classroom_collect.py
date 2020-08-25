@@ -74,7 +74,7 @@ def print_repo_info(repo):
 if __name__ == '__main__':
     parser = ArgumentParser(
         description="Extract repos in a GitHub Classroom repositories for a given assignment into a CSV file"
-                    "CSV HEADERS: ORG_NAME, ASSIGNMENT, USERNAME, TEAM, REPO-NAME, GIT-URL")
+                    "CSV HEADERS: ORG_NAME, ASSIGNMENT, REPO_ID, REPO_NAME, REPO_GIT")
     parser.add_argument('ORG_NAME', help="Organization name for GitHub Classroom")
     parser.add_argument('ASSIGNMENT_PREFIX', help="Prefix string for the assignment.")
     parser.add_argument('CSV', help="CSV file where to store the set of repo links.")
@@ -137,13 +137,13 @@ if __name__ == '__main__':
         if match:
             # repo_url = 'git@github.com:{}'.format(repo.full_name)
             logging.info('Found repo {}'.format(repo.full_name))
-            repos_select.append({'REPO_SUFFIX': match.group(1), 'REPO_NAME': repo.full_name, 'GIT_URL': repo.ssh_url})
+            repos_select.append({'REPO_SUFFIX': match.group(1), 'REPO_NAME': repo.full_name, 'REPO_URL': repo.ssh_url})
 
     # Produce CSV file output with all repos if requested via option --csv
     logging.info('List of repos will be saved to CSV file *{}*.'.format(args.CSV))
     with open(args.CSV, 'w') as output_csv_file:
         csv_writer = csv.DictWriter(output_csv_file,
-                                    fieldnames=['ORG_NAME', 'ASSIGNMENT', 'REPO_ID', 'REPO_NAME', 'GIT_URL'])
+                                    fieldnames=['ORG_NAME', 'ASSIGNMENT', 'REPO_ID', 'REPO_NAME', 'REPO_URL'])
         csv_writer.writeheader()
 
         # for each repo in repo_select produce a row in the CSV file, add the team name from mapping
