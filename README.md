@@ -10,7 +10,14 @@ These are some useful scripts that I use in teaching:
 
 All this scripts were tested under Python 3.6.
 
+## Setup
 
+To install all requirements:
+
+```bash
+sudo apt install python3-pip
+sudo pip3 install -r requirements.txt
+```
 
 ## Extract repos from a GitHub Classroom/Organization
 

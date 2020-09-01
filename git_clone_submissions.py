@@ -9,6 +9,8 @@ It also produces a file submission_timestamp.csv with all timestamp of the tag f
 
 This script uses GitPython module to have Git API: https://gitpython.readthedocs.io/en/stable/tutorial.html
 
+    python3 -m pip install gitpython pytz
+
     Sebastian Sardina 2020 - ssardina@gmail.com
 """
 import datetime
