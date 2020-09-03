@@ -4,9 +4,12 @@ These are some useful scripts that I use in teaching:
 
 * `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment.
 * `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
+* `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHib repositories. This can be used to do analysis of student contributions
+
+Other:
+
 * `gh_scrape_scrape.py`: Scrape Github for repo info via searches.
 * `gh_clone_repos.py`: Clones set of GitHub repo.
-* `process_ai_teams.py`
 
 All this scripts were tested under Python 3.6.
 
@@ -92,6 +95,23 @@ python3 git_clone_submissions.py --file-timestamps AI20_timestamps.csv \
 This will download all submissions of teams listed in csv file `AI20-p0.csv` using tag `submission` and save them in directory `p0-repos/`. 
 
 A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned successfully. The timezone used is defined by constant `TIMEZONE` in the script (default to Australia/Melbourne time zone).
+
+
+
+## Extract author commit stats
+
+Given a CSV file with a collection of repositories, extract in a CSV file how many commits each author has done per repo. For example:
+
+```bash
+python3 git-hw-submissions.git/gh_authors_collect.py -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt --tag submission ai20-p2-repos.csv ai20-p2-authors.csv
+```
+
+The `--tag` option restricts to tags finishing in a given tag. 
+
+The input csv file must have the fields:
+* `REPO_NAME`: the full repo name: owner/organization + name of repo. 
+* `REPO_ID`: the id of the repo (e.g., team name).
+
 
 ### Some useful commands
 
