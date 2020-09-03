@@ -8,8 +8,11 @@ output directory.
 It also produces a file submission_timestamp.csv with all timestamp of the tag for the successful repo cloned/updated.
 
 This script uses GitPython module to have Git API: https://gitpython.readthedocs.io/en/stable/tutorial.html
+GitPython provides object model access to your git repository.
 
     python3 -m pip install gitpython pytz
+
+One could also use pygit2 (https://www.pygit2.org/), which are bindings to the libgit2 shared library
 
     Sebastian Sardina 2020 - ssardina@gmail.com
 """
@@ -22,13 +25,15 @@ import csv
 import logging
 import traceback
 import pytz
-
+import util
 
 # https://gitpython.readthedocs.io/en/2.1.9/reference.html
 # http://gitpython.readthedocs.io/en/stable/tutorial.html
 import git
 
 # from git import Repo, Git
+
+
 
 # logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG, datefmt='%a, %d %b %Y %H:%M:%S')
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO,
@@ -87,25 +92,6 @@ def load_timestamps(timestamp_filename):
     return team_timestamps
 
 
-def get_repos_from_csv(csv_file, team=None):
-    """
-    Collect list of teams with their git URL links from a csv file
-
-    :param csv_file: file where csv data is with two fields TEAM and GIT
-    :param team: the specific name of one team or None
-    :return: a list of teams
-    """
-    teams_file = open(csv_file, 'r')
-    # Get the list of teams with their GIT URL from csv file
-    teams_reader = csv.DictReader(teams_file, delimiter=',')
-    teams = list(teams_reader)
-    teams_file.close()
-
-    # If there was a specific team given, just keep that one in the list to clone just that
-    if team is not None:
-        teams = [t for t in teams if t[CSV_REPO_ID] == team]
-
-    return teams
 
 
 def clone_team_repos(list_repos, tag_str, output_folder):
@@ -218,7 +204,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 shutil.rmtree(git_local_dir)
                 continue
 
-        no_commits = repo.git.rev_list('--count', tag_str)
+        no_commits = repo.git.rev_list('--count', tag_str)  # get the no of commits tracing to the tag
         repo.close()
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         teams_cloned.append(
@@ -275,7 +261,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = get_repos_from_csv(args.repos_csv_file, args.repo)
+    list_repos = util.get_repos_from_csv(args.repos_csv_file, args.repo)
 
     if len(list_repos) == 0:
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')

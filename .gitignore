@@ -77,3 +77,4 @@ link-*
 *.bak
 test
 .idea
+__*

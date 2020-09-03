@@ -30,6 +30,7 @@ import traceback
 from argparse import ArgumentParser
 from github import Github, Repository, Organization, GithubException
 import logging
+import util
 
 CSV_GITHUB_USERNAME="github_username"
 CSV_GITHUB_IDENTIFIER= "identifier"
@@ -87,16 +88,11 @@ if __name__ == '__main__':
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))
 
+    if not args.token_file and not (args.user or args.password):
+        logging.error('No authentication provided, quitting....')
+        exit(1)
     try:
-        if args.token_file:
-            with open(args.token_file) as fh:
-                token = fh.read().strip()
-            g = Github(token)
-        elif args.user and args.password:
-            g = Github(args.user, args.password)
-        else:
-            logging.error('No authentication provided, quitting....')
-            exit(1)
+        g = util.open_gitHub(user=args.user, token_file=args.token_file, password=args.password)
     except:
         logging.error("Something wrong happened during GitHub authentication. Check credentials.")
         exit(1)
