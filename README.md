@@ -103,7 +103,9 @@ A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned
 Given a CSV file with a collection of repositories, extract in a CSV file how many commits each author has done per repo. For example:
 
 ```bash
-python3 git-hw-submissions.git/gh_authors_collect.py -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt --tag submission ai20-p2-repos.csv ai20-p2-authors.csv
+python3 git-hw-submissions.git/gh_authors_collect.py -u ssardina \
+    -t ~/.ssh/keys/github-token-ssardina.txt \
+    --tag submission ai20-p2-repos.csv ai20-p2-authors.csv
 ```
 
 The `--tag` option restricts to tags finishing in a given tag. 
