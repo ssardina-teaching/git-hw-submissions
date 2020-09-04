@@ -143,27 +143,34 @@ rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project
 ```
 
 
-## Other scripts
+## Interactive python with GitHub via PyGithub
 
-Under [other-scripts/](other-scripts) folder.
-
-### Scrape Github repositories
-
-Script `gh_scrape.py` collects information in CSV files on various searches.
-
-* Uses [PyGithub](https://github.com/PyGithub/PyGithub) Github API.
-
-* Github searches: https://help.github.com/articles/searching-code/
-* Github search limits: https://developer.github.com/v3/search/#rate-limit
-    * 5000 per hour total (and 30 per minute for search API)
-* Github search API: https://developer.github.com/v3/search/
+By using [github.GitCommit.GitCommit](https://pygithub.readthedocs.io/en/latest/github_objects/GitCommit.html#github.GitCommit.GitCommit) and [github.StatsContributor.StatsContributor](https://pygithub.readthedocs.io/en/latest/github_objects/StatsContributor.html#github.StatsContributor.StatsContributor).
 
 
-### Clone set of GitHub repo
-
-Script `gh_clone_repos.py` clones a list of GitHub repos given in a CSV file.
-
-### GitHub Classroom script
-
-Various manipulation commands for GitHub classrrom.
-
+```
+[ssardina@Thinkpad-X1 git-hw-submissions.git]$ python3
+Python 3.6.9 (default, Jul 17 2020, 12:50:27) 
+[GCC 8.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from github import Github, Repository, Organization, GithubException
+>>> import util
+>>> g = util.open_gitHub(token_file='/home/ssardina/.ssh/keys/github-token-ssardina.txt')
+/home/ssardina/.ssh/keys/github-token-ssardina.txt
+>>> repo = g.get_repo('RMIT-COSC1127-1125-AI/p2-multiagent-aione')
+>>> for contrib in repo.get_stats_contributors():
+...     print(contrib.author)
+... 
+NamedUser(login="ssardina")
+NamedUser(login="rockshan3906")
+NamedUser(login="s3752041")
+>>> c = repo.get_commit('ecad94d73c5287a65981e299083561bf025a245e')
+>>> print(c.author)
+NamedUser(login="s3752041")
+>>> contribs = repo.get_stats_contributors()
+>>> c = contribs[0]
+>>> print(c.author)
+NamedUser(login="ssardina")
+>>> print(c.total)
+1
+```
