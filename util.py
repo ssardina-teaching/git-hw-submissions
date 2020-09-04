@@ -1,6 +1,8 @@
 import csv
 from github import Github, Repository, Organization, GithubException
 
+CSV_REPO_GIT = 'REPO_URL'
+CSV_REPO_ID = 'REPO_ID'
 
 def get_repos_from_csv(csv_file, team=None):
     """
@@ -24,7 +26,6 @@ def get_repos_from_csv(csv_file, team=None):
 
 
 def open_gitHub(user=None, token_file=None, password=None):
-    print(token_file)
     # Authenticate to GitHub
     if token_file:
         with open(token_file) as fh:

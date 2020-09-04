@@ -31,6 +31,7 @@ from argparse import ArgumentParser
 from github import Github, Repository, Organization, GithubException
 import logging
 import util
+from typing import List
 
 CSV_GITHUB_USERNAME="github_username"
 CSV_GITHUB_IDENTIFIER= "identifier"
@@ -70,6 +71,65 @@ def print_repo_info(repo):
     except:
         pass
 
+def traverse_commit(c):
+    set_c = set([c.sha])
+    for c2 in c.parents:
+        # print(c2.sha)
+        set_2 = traverse_commit(c2)
+        set_c = set_c.union(set_2)
+    return set_c
+
+def get_stats_contrib_repo(g : Github, repo_name, sha=None):
+    '''
+    Extracts commit stats for a repo up to some sha/tag
+    This will even parse commits that have no author login as it will extract base git commit email info
+
+    :param g: handle to GitHub
+    :param repo_name: name of the repository (owner + name)
+    :param sha: if given, up to that commit
+    :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
+    '''
+    repo = g.get_repo(repo_name)
+    repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
+    no_commits = repo_commits.totalCount
+
+    author_commits = {}
+    author_additions = {}
+    author_deletions = {}
+    for c in repo_commits:
+        try:
+            author_id = c.author.login
+        except:
+            author_id = f'name({c.commit.author.name})'
+
+        author_commits[author_id] = author_commits.get(author_id, 0) + 1
+        author_additions[author_id] = author_additions.get(author_id, 0) + c.stats.additions
+        author_deletions[author_id] = author_deletions.get(author_id, 0) + c.stats.deletions
+
+    return no_commits, author_commits, author_additions, author_deletions
+
+def get_stats_contrib_repo_all(g: Github, repo_name):
+    '''
+    Extracts commit stats for a whole repo
+    This will ignore commits done by non registered authors
+
+    :param g: handle to GitHub
+    :param repo_name: name of the repository (owner + name)
+    :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
+    '''
+    repo = g.get_repo(repo_name)
+
+    no_commits = 0
+    author_commits = {}
+    author_additions = {}
+    author_deletions = {}
+    for contrib in repo.get_stats_contributors():
+            no_commits += contrib.total
+            author_id = contrib.author.login
+            author_commits[author_id] = contrib.total
+            author_additions[author_id] = sum([w.a for w in contrib.weeks])
+            author_deletions[author_id] = sum([w.d for w in contrib.weeks])
+    return no_commits, author_commits, author_additions, author_deletions
 
 
 if __name__ == '__main__':
@@ -92,6 +152,7 @@ if __name__ == '__main__':
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
         exit(0)
 
+    # Authenticate to GitHub
     if not args.token_file and not (args.user or args.password):
         logging.error('No authentication provided, quitting....')
         exit(1)
@@ -101,31 +162,25 @@ if __name__ == '__main__':
         logging.error("Something wrong happened during GitHub authentication. Check credentials.")
         exit(1)
 
+    # Process each repo in list_repos
     authors_stats = []
     for r in list_repos:
-        repo = g.get_repo(r["REPO_NAME"])
         print(f'*** Processing repo {r["REPO_NAME"]}: ', end= '')
         try:
-            repo_commits = repo.get_commits(sha=args.tag) if args.tag is not None else repo.get_commits()
-            repo_no_commits = repo_commits.totalCount
+            no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(g, r["REPO_NAME"], sha=args.tag)
+            # no_commits, author_commits, author_add, author_del = get_stats_contrib_repo_all(g, r["REPO_NAME"])
         except:
             print('NONE - SKIP')
             continue
-        print(repo_no_commits)
+        print(no_commits)
+        authors_stats.append((r["REPO_ID"], author_commits, author_add, author_del))
 
-        repo_authors = {}
-        for c in repo_commits:
-            try:
-                repo_authors[c.author.login] = repo_authors.get(c.author.login, 0) + 1
-            except:
-                repo_authors[f'name({c.commit.author.name})'] = repo_authors.get(f'name({c.commit.author.name})', 0) + 1
-
-        authors_stats.append((r["REPO_ID"], repo_authors))
 
     # Produce CSV file output with all repos if requested via option --csv
     logging.info(f'List of author stats will be saved to CSV file *{args.CSV_OUT}*.')
     with open(args.CSV_OUT, 'w') as output_csv_file:
-        csv_writer = csv.DictWriter(output_csv_file, fieldnames=['REPO_ID', 'AUTHOR', 'NO_COMMITS'])
+        csv_writer = csv.DictWriter(output_csv_file,
+                                    fieldnames=['REPO_ID', 'AUTHOR', 'COMMITS', 'ADDITIONS', "DELETIONS"])
         csv_writer.writeheader()
 
         # for each repo in repo_select produce a row in the CSV file, add the team name from mapping
@@ -134,6 +189,8 @@ if __name__ == '__main__':
                 row = {}
                 row['REPO_ID'] = x[0]
                 row['AUTHOR'] = author
-                row['NO_COMMITS'] = x[1][author]
+                row['COMMITS'] = x[1][author]
+                row['ADDITIONS'] = x[2][author]
+                row['DELETIONS'] = x[3][author]
 
                 csv_writer.writerow(row)
