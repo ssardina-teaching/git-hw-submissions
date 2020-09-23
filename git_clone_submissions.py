@@ -13,9 +13,10 @@ GitPython provides object model access to your git repository.
     python3 -m pip install gitpython pytz
 
 One could also use pygit2 (https://www.pygit2.org/), which are bindings to the libgit2 shared library
-
-    Sebastian Sardina 2020 - ssardina@gmail.com
 """
+__author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
+__copyright__   = "Copyright 2018-2020"
+
 import datetime
 import shutil
 import os

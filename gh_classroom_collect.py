@@ -8,20 +8,10 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
-
-    Sebastian Sardina 2020 - ssardina@gmail.com
-
 """
-#
-# Script obtained from: https://gist.github.com/robwhess/48547bf369ccf422cca78e5753b5a1c7
-# This is a simple python script to clone all of the repositories for an
-# assignment managed via GitHub Classroom.  It has a dependency on the
-# requests module, so to use it, you must:
-#
-#   pip install requests
-#
-# You can run the script with the '-h' option to get info on its usage.
-#
+__author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
+__copyright__   = "Copyright 2020"
+
 import base64
 import csv
 import re

@@ -1,4 +1,3 @@
-#!/user/bin/env python
 """
 Script to obtain all the repositories from a GitHub Classroom
 
@@ -6,22 +5,14 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
     python3 -m pip install PyGithub
 
+PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
+
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
-
-    Sebastian Sardina 2020 - ssardina@gmail.com
-
 """
-#
-# Script obtained from: https://gist.github.com/robwhess/48547bf369ccf422cca78e5753b5a1c7
-# This is a simple python script to clone all of the repositories for an
-# assignment managed via GitHub Classroom.  It has a dependency on the
-# requests module, so to use it, you must:
-#
-#   pip install requests
-#
-# You can run the script with the '-h' option to get info on its usage.
-#
+__author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
+__copyright__   = "Copyright 2020"
+
 import base64
 import csv
 import re
@@ -81,7 +72,7 @@ def traverse_commit(c):
 
 def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     '''
-    Extracts commit stats for a repo up to some sha/tag
+    Extracts commit stats for a repo up to some sha/tag by inspecting each commit
     This will even parse commits that have no author login as it will extract base git commit email info
 
     :param g: handle to GitHub
@@ -90,6 +81,7 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
     '''
     repo = g.get_repo(repo_name)
+    # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
     repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
     no_commits = repo_commits.totalCount
 
@@ -110,7 +102,7 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
 
 def get_stats_contrib_repo_all(g: Github, repo_name):
     '''
-    Extracts commit stats for a whole repo
+    Extracts commit stats for a whole repo (not commit per commit)
     This will ignore commits done by non registered authors
 
     :param g: handle to GitHub
@@ -165,14 +157,13 @@ if __name__ == '__main__':
     # Process each repo in list_repos
     authors_stats = []
     for r in list_repos:
-        print(f'*** Processing repo {r["REPO_NAME"]}: ', end= '')
+        print(f'*** Processing repo {r["REPO_NAME"]}...')
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(g, r["REPO_NAME"], sha=args.tag)
-            # no_commits, author_commits, author_add, author_del = get_stats_contrib_repo_all(g, r["REPO_NAME"])
         except:
-            print('NONE - SKIP')
+            print('\t NONE - SKIP')
             continue
-        print(no_commits)
+        print(f'\t finished with {no_commits} commits by {len(author_commits)} authors.')
         authors_stats.append((r["REPO_ID"], author_commits, author_add, author_del))
 
 
