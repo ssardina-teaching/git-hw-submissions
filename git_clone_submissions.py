@@ -139,6 +139,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
                 logging.info(f'Team {team_name} cloned successfully with tag date {submission_time}.')
                 teams_new.append(team_name)
+                status = 'new'
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning(f'Repo for team {team_name} with tag/branch {tag_str} cannot be cloned: {e.stderr}')
@@ -182,9 +183,11 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 if submission_time == submission_time_local:
                     logging.info(f'Team {team_name} submission has not changed.')
                     teams_unchanged.append(team_name)
+                    status = 'unchanged'
                 else:
                     logging.info(f'Team {team_name} updated successfully with new tag date {submission_time}')
                     teams_updated.append(team_name)
+                    status = 'updated'
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
                 logging.warning(f'Problem with existing repo for team {team_name}; removing it: {e.stderr}')
@@ -214,7 +217,8 @@ def clone_team_repos(list_repos, tag_str, output_folder):
              'commit': submission_commit,
              'tag': tag_str,
              'tagged_at': tagged_time,
-             'no_commits': no_commits})
+             'no_commits': no_commits,
+             'status': status})
 
     # the end....
     return teams_cloned, teams_new, teams_updated, teams_unchanged, teams_missing, teams_notag, teams_noteam
@@ -289,9 +293,11 @@ if __name__ == "__main__":
     with open(args.file_timestamps, 'w') as csv_file:
         submission_writer = csv.DictWriter(csv_file,
                                            fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at',
-                                                       'no_commits'])
+                                                       'no_commits', 'status'])
         submission_writer.writeheader()
-        if args.repo and teams_csv:  # dump any existing timestamp entry that was not the team requested
+
+        # if only a specific repo was asked, just migrate all the other rows from the previous file first
+        if args.repo and teams_csv:
             for row in list(teams_csv):
                 if row['team'] != teams_cloned[0]['team']:
                     submission_writer.writerow(row)
