@@ -5,6 +5,7 @@ These are some useful scripts that I use in teaching:
 * `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment.
 * `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
 * `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHib repositories. This can be used to do analysis of student contributions
+* `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
 
 Other:
 
