@@ -141,7 +141,7 @@ if __name__ == '__main__':
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repo)
 
     if len(list_repos) == 0:
-        logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
+        logging.warning(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
 
     # Authenticate to GitHub
