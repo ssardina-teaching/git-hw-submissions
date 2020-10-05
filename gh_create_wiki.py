@@ -1,7 +1,7 @@
 """
 Script to push a Wiki template to repos in a CSV file
 
-python3 ~/git/soft/courses/tools/git-hw-submissions.git/gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-templte/
+python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
 
 Uses GitPython https://gitpython.readthedocs.io/en/stable/index.html
 """

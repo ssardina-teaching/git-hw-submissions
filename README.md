@@ -116,6 +116,15 @@ The input csv file must have the fields:
 * `REPO_ID`: the id of the repo (e.g., team name).
 
 
+## Push Wiki template to a list of repos
+
+Example:
+
+```bash
+python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
+```
+
+
 ### Some useful commands
 
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
