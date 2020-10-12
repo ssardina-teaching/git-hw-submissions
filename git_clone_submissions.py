@@ -299,7 +299,7 @@ if __name__ == "__main__":
         # if only a specific repo was asked, just migrate all the other rows from the previous file first
         if args.repo and teams_csv:
             for row in list(teams_csv):
-                if row['team'] != teams_cloned[0]['team']:
+                if row['team'] != args.repo:
                     submission_writer.writerow(row)
 
         # now dump all the teams that have been cloned into the csv timestamp file
