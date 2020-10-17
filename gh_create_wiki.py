@@ -19,19 +19,20 @@ import util
 WIKI_DIR = 'wiki'
 
 
-def push_wiki(repo_id,  first_commit_name, no_commits):
-    REPOS_EXCEPT = ['math-club-2',
-                    'jsj-2020-contest',
-                    'crackman',
-                    'tupacman2',
-                    'chaino1'
-                    'threelittlebirds2',
-                    'ai-jr-rw2',
-                    'mitsubishi-lancer-evolution-x',
-                    'compulsive-eater-ghost-triad2',
-                    'loginquitas-duo',
-                    'alphabetagamma']
+REPOS_EXCEPT = ['math-club-2',
+                'jsj-2020-contest',
+                'crackman',
+                'tupacman2',
+                'chaino1'
+                'threelittlebirds2',
+                'ai-jr-rw2',
+                'mitsubishi-lancer-evolution-x',
+                'compulsive-eater-ghost-triad2',
+                'loginquitas-duo',
+                'alphabetagamma']
 
+
+def push_wiki(repo_id,  first_commit_name, no_commits):
     if repo_id in REPOS_EXCEPT:
         print(f'\t\t\t Will update because it is on exception list')
         return True
@@ -45,9 +46,14 @@ def push_wiki(repo_id,  first_commit_name, no_commits):
 if __name__ == '__main__':
     parser = ArgumentParser(
         description="Push a template Wiki in GitHib Wiki pages form a list of repos")
-    parser.add_argument('REPO_CSV', help="List of repositories to push a Wiki template.")
-    parser.add_argument('WIKI_TEMPLATE', help='folder where the wiki template is located.')
-    parser.add_argument('--repo', help='if given, only the team specified will be cloned/updated.')
+    parser.add_argument(
+        'REPO_CSV', help="List of repositories to push a Wiki template.")
+    parser.add_argument(
+        'WIKI_TEMPLATE', help='folder where the wiki template is located.')
+    parser.add_argument(
+        '--repo', help='if given, only the team specified will be cloned/updated.')
+    parser.add_argument('--force', action='store_true',
+                        help='push it even if there exists a Wiki with commits.')
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
@@ -71,7 +77,7 @@ if __name__ == '__main__':
         repo = git.Repo.clone_from(wiki_repo, WIKI_DIR)
         commits = list(repo.iter_commits("master", max_count=5))
 
-        if push_wiki(r['REPO_ID'], commits[0].author.name, len(commits)):
+        if args.force or push_wiki(r['REPO_ID'], commits[0].author.name, len(commits)):
             os.system(f"cp -rf {args.WIKI_TEMPLATE}/* {WIKI_DIR}/")
             repo.index.add(['*'])
             repo.index.commit('Init Wiki template. Enjoy!')
