@@ -37,28 +37,29 @@ The CSV file produced, for each repo, the following information:
 
 The script requires a username and its password or file with GitHub access token that allows access to the organization.
 
-For example:
+For example, to get all the repos submitted for assignment with prefix `p0-warmup` into a CSV file `p0/cosc1127-repos-p0.csv`:
 
-```bash
-python3 gh_classroom_collect.py --team-map test/cosc1127-map.csv \
-     -u ssardina -t ~/.ssh/keys/github-token-ssardina.txt \
-     RMIT-COSC1127-1125-AI project-0-tutorial test/cosc1127-repos.csv
+```shell
+$ python3 ../git-hw-submissions.git/gh_classroom_collect.py -u ssardina -t ~/.ssh/keys/github-token-ssardina-new-May_5-2021.txt RMIT-COSC1127-1125-AI21  p0-warmup p0/cosc1127-repos-p0.csv
 ```
 
 This will produce a CSV of this form:
 
 ```csv
-ORG_NAME,ASSIGNMENT,USERNAME,TEAM,REPO-NAME,GIT-URL
-RMIT-COSC1127-1125-AI,project-0-tutorial,msardina,boca,RMIT-COSC1127-1125-AI/project-0-tutorial-msardina,git@github.com:RMIT-COSC1127-1125-AI/project-0-tutorial-msardina.git
+ORG_NAME,ASSIGNMENT,REPO_ID,REPO_NAME,REPO_URL
+RMIT-COSC1127-1125-AI21,p0-warmup,CallumA3791362,RMIT-COSC1127-1125-AI21/p0-warmup-CallumA3791362,git@github.com:RMIT-COSC1127-1125-AI21/p0-warmup-CallumA3791362.git
+RMIT-COSC1127-1125-AI21,p0-warmup,eolivesjo,RMIT-COSC1127-1125-AI21/p0-warmup-eolivesjo,git@github.com:RMIT-COSC1127-1125-AI21/p0-warmup-eolivesjo.git
+RMIT-COSC1127-1125-AI21,p0-warmup,bivhitscar,RMIT-COSC1127-1125-AI21/p0-warmup-bivhitscar,git@github.com:RMIT-COSC1127-1125-AI21/p0-warmup-bivhitscar.git
 ...
 ...
 ```
 
-Now, with such CSV file we can clone the corresponding repos at tag `submission` into `test/repos` using the script `git_clone_submissions.py` (see below):
+If we want to map repo's suffixex (github_username) to student ids (identifier), we can use `--student-map cosc1127-map.csv`
+
+Next, we can use that CSV file to clone the corresponding repos at a given tag `submission` using the script `git_clone_submissions.py`.
 
 ```bash
-python3 git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv \
-      test/cosc1127-repos.csv submission test/repos/
+$ python ../git-hw-submissions.git/git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv p0/cosc1127-repos-p0.csv submission p0/
 ```
 
 ## Clone GIT-based Homework Submissions  
@@ -74,26 +75,19 @@ At the end, the script produces a CSV file with the information of each repo suc
 
 The script depends on the [GitPython](https://gitpython.readthedocs.io) module:
 
-```bash
-pip3 install gitpython --user
+```shell
+$ pip3 install gitpython --user
 ```
 
-To get all the options, use call the script with option `-h`:
+For example, to clone Project 0 at commit with tag "` submission`" using the database of repos `p0/cosc1127-repos-p0.csv`:
 
-```bash
-usage: git_clone_submissions.py -h
+```shell
+$ python ../git-hw-submissions.git/git_clone_submissions.py --file-timestamps p0/cosc1127_timestamps.csv p0/cosc1127-repos-p0.csv submission p0/ &| tee p0/clone-p0.txt
 ```
 
-For example:
+All repos will be cloned within folder `p0/` and the file `p0/cosc1127_timestamps.csv` will contain the timestamps and commits of each repo cloned successfully. 
 
-```bash
-python3 git_clone_submissions.py --file-timestamps AI20_timestamps.csv \
-    AI20-p0.csv submission p0-repos/ | tee clone-Jul-25.txt
-```
-
-This will download all submissions of teams listed in csv file `AI20-p0.csv` using tag `submission` and save them in directory `p0-repos/`.
-
-A file `AI20_timestamps.csv` with the timestamps and commits of each repo cloned successfully. The timezone used is defined by constant `TIMEZONE` in the script (default to Australia/Melbourne time zone).
+The timezone used is defined by constant `TIMEZONE` in the script (default to Australia/Melbourne time zone).
 
 ## Extract author commit stats
 
