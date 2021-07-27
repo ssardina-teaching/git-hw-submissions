@@ -15,7 +15,7 @@ GitPython provides object model access to your git repository.
 One could also use pygit2 (https://www.pygit2.org/), which are bindings to the libgit2 shared library
 """
 __author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__   = "Copyright 2018-2020"
+__copyright__   = "Copyright 2018-2021"
 
 import datetime
 import shutil
@@ -37,8 +37,8 @@ import git
 
 
 # logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG, datefmt='%a, %d %b %Y %H:%M:%S')
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO,
-                    datefmt='%a, %d %b %Y %H:%M:%S')
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                    level=logging.INFO, datefmt='%a, %d %b %Y %H:%M:%S')
 
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
 TIMEZONE = pytz.timezone('Australia/Melbourne')
@@ -265,6 +265,14 @@ if __name__ == "__main__":
     # we could also use vars(parser.parse_args()) to make args a dictionary args['<option>']
     args = parser.parse_args()
 
+    if not os.path.exists(args.repos_csv_file):
+        print(f"Repo CSV database {args.repos_csv_file} does not exists!")
+        exit(1)
+
+    if os.path.split(args.file_timestamps)[-2] and not os.path.split(args.file_timestamps)[-2]:
+        print(f"Path to timestamp file {args.file_timestamps} does not exists! Not able to dump cloning timestamp of repos anywhere. Quitting...")
+        exit(1)
+
     # Get the list of TEAM + GIT REPO links from csv file
     list_repos = util.get_repos_from_csv(args.repos_csv_file, args.repo)
 
@@ -272,6 +280,10 @@ if __name__ == "__main__":
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
         exit(0)
 
+    open(args.file_timestamps, 'w')
+
+    print(args)
+    print(f"Start cloning repos at: {datetime.datetime.now(tz=TIMEZONE).strftime('%Y-%m-%d-%H-%M-%S')}")
 
 
     # Perform the ACTUAL CLONING of all teams in list_teams
@@ -315,6 +327,3 @@ if __name__ == "__main__":
     report_teams('TEAMS WITH NO TAG', teams_notag)
     report_teams('REPOS WITH NO TEAM', teams_noteam)
     print("\n ============================================== \n")
-
-
-
