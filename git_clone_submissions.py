@@ -246,7 +246,8 @@ if __name__ == "__main__":
         help='CSV file containing the URL git repo for each team (must contain two named columns: REPO_ID and REPO_URL).'
     )
     parser.add_argument(
-        dest='tag_str', type=str,
+        dest='tag_str', 
+        type=str,
         help='commit tag to clone (use "master" for latest commit at master).'
     )
     parser.add_argument(
