@@ -6,7 +6,7 @@ These are some useful scripts that I use in teaching:
 * `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
 * `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHub repositories. This can be used to do analysis of student contributions
 * `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
-* `git_commit_all.sh`: a shell script template to make changes to a collection of repos.
+* `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
 
 Other scripts (under [`other-scripts/`](other-scripts/) folder):
 
