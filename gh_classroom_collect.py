@@ -118,15 +118,18 @@ if __name__ == '__main__':
 
     # collect all repos in the organization with the assignment prefix
     repos_select = []
+    count = 0
     for repo in org_repos:
         match = re.match(REPO_URL_PATTERN, repo.full_name)
         if match:
             # repo_url = 'git@github.com:{}'.format(repo.full_name)
-            logging.info('Found repo {}'.format(repo.full_name))
+            count += 1
+            print(f'Found repo {repo.full_name}')
             repos_select.append({'REPO_SUFFIX': match.group(1), 'REPO_NAME': repo.full_name, 'REPO_URL': repo.ssh_url})
+    print(f"Number of repos found with prefix *{args.ASSIGNMENT_PREFIX}*:", count)
 
     # Produce CSV file output with all repos if requested via option --csv
-    logging.info('List of repos will be saved to CSV file *{}*.'.format(args.CSV))
+    logging.info(f'List of repos will be saved to CSV file *{args.CSV}*.')
     with open(args.CSV, 'w') as output_csv_file:
         csv_writer = csv.DictWriter(output_csv_file,
                                     fieldnames=['ORG_NAME', 'ASSIGNMENT', 'REPO_ID', 'REPO_NAME', 'REPO_URL'])
