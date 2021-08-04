@@ -33,6 +33,7 @@ for d in $1/*/ ; do
     # Get into student repo, add, commit and push 
     cd $d
     echo $PWD
+    git pull
     git add .
     git commit -m "Updated pacman.py; fix foodEdible issue"
     git push
