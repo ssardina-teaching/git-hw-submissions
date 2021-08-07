@@ -143,12 +143,17 @@ To copy just the new zip files:
 rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project-4/zip-submissions/
 ```
 
-## Interactive python with GitHub via PyGithub
+## Interactive Python with GitHub 
+
+
+### Using PyGithub
 
 By using [github.GitCommit.GitCommit](https://pygithub.readthedocs.io/en/latest/github_objects/GitCommit.html#github.GitCommit.GitCommit) and [github.StatsContributor.StatsContributor](https://pygithub.readthedocs.io/en/latest/github_objects/StatsContributor.html#github.StatsContributor.StatsContributor).
 
+Loading `util`:
+
 ```bash
-[ssardina@Thinkpad-X1 git-hw-submissions.git]$ python3
+$ python3
 Python 3.6.9 (default, Jul 17 2020, 12:50:27)
 [GCC 8.4.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.
@@ -173,3 +178,65 @@ NamedUser(login="ssardina")
 >>> print(c.total)
 1
 ```
+
+Plain:
+
+```shell
+$ pyhton
+
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import github
+>>> g = github.Github("sdlkajsdlakjsdklaasdasd")
+>>> repo = g.get_repo("RMIT-COSC1127-1125-AI21/p0-warmup-danrowley24081979")
+>>> print(repo.name)
+p0-warmup-danrowley24081979
+>>> print(repo.archived)
+False
+```
+
+
+
+## Using GitPyhon
+
+https://gitpython.readthedocs.io/en/stable/
+
+```shell
+```
+
+
+
+## Using git CLI
+
+### Tagging
+
+```shell
+$ git for-each-ref refs/tags/$TAG --shell --format='
+TAG=%(refname)
+TYPE=%(objecttype)
+COMMIT=%(objectname)
+TAGGER=%(tagger)
+EMAIL=%(taggeremail)
+DATE=%(taggerdate)
+CONTENTS=%(contents)
+'
+
+TAG='refs/tags/submission'
+TYPE='tag'
+COMMIT='b4d4f4072d05cac814a527856b910396929ee475'
+TAGGER='danrowley24081979 <64665857+danrowley24081979@users.noreply.github.com> 1627217610 +1000'
+EMAIL='<64665857+danrowley24081979@users.noreply.github.com>'
+DATE='Sun Jul 25 22:53:30 2021 +1000'
+CONTENTS=''
+``` 
+
+
+```shell
+$ git for-each-ref --shell --format="ref=%(refname:short) dt=%taggerdate:format:%s)" "refs/tags/*"
+
+ref='submission' dt='1627217610 +1000'
+```
+
+```shell
+$ git tag -l --format='%(refname)   %(taggerdate)'
+```
+
