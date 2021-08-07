@@ -19,11 +19,12 @@ import re
 import traceback
 
 from argparse import ArgumentParser
-from github import Github, Repository, Organization, GithubException
 import logging
 import util
 from typing import List
 
+# https://pygithub.readthedocs.io/en/latest/introduction.html
+from github import Github, Repository, Organization, GithubException
 CSV_GITHUB_USERNAME="github_username"
 CSV_GITHUB_IDENTIFIER= "identifier"
 
@@ -80,7 +81,9 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     :param sha: if given, up to that commit
     :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
     '''
+    # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html?highlight=tag#github.Repository.Repository.get_git_tag
     repo = g.get_repo(repo_name)
+    
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
     repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
     no_commits = repo_commits.totalCount
