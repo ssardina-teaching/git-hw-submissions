@@ -284,11 +284,8 @@ if __name__ == "__main__":
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
         exit(0)
 
-    open(args.file_timestamps, 'w')
-
     print(args)
     print(f"Start cloning repos at: {get_time_now()}")
-
 
 
     # Perform the ACTUAL CLONING of all teams in list_teams
@@ -306,14 +303,11 @@ if __name__ == "__main__":
     # Make a backup of an existing cvs timestamp file there is one
     if os.path.exists(args.file_timestamps):
         logging.warning(f'Making a backup of existing timestamp file {args.file_timestamps}.')
-        f = open(args.file_timestamps, 'r')
-        print(args.file_timestamps, f.readlines())
-        # timestamp_back = list(csv.DictReader(f))    # read current timestamp file if exists
-        timestamp_back = list(csv.DictReader(f, fieldnames=TIMESTAMP_HEADER))
-        print(timestamp_back)
+        with open(args.file_timestamps, 'r') as f:
+            timestamp_back = list(csv.DictReader(f))    # read current timestamp file if exists
+            # timestamp_back = list(csv.DictReader(f, fieldnames=TIMESTAMP_HEADER))
 
         time_now = get_time_now()
-        #TODO: somehow it leaves an empty copy if filename contains underscore _
         shutil.copy(args.file_timestamps, f'{args.file_timestamps}-{time_now}.bak')
 
     with open(args.file_timestamps, 'w') as csv_file:
@@ -322,7 +316,6 @@ if __name__ == "__main__":
         submission_writer.writeheader()
 
         # if only a specific repo was asked, just migrate all the other rows from the previous file first
-        print(timestamp_back)
         if args.team and timestamp_back:
             for row in timestamp_back:
                 if row['team'] != args.team:
