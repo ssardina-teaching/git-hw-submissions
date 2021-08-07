@@ -28,7 +28,7 @@ import traceback
 import pytz
 import util
 
-# https://gitpython.readthedocs.io/en/2.1.9/reference.html
+# https://gitpython.readthedocs.io/en/stable/reference.html
 # http://gitpython.readthedocs.io/en/stable/tutorial.html
 import git
 
@@ -92,6 +92,9 @@ def load_timestamps(timestamp_filename):
             team_timestamps[row['team']] = row['submitted_at']
     return team_timestamps
 
+
+def get_time_now():
+    return datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
 
 
 
@@ -255,7 +258,7 @@ if __name__ == "__main__":
         help='the folder where to clone all repositories.'
     )
     parser.add_argument(
-        '--repo',
+        '--team',
         help='if given, only the team specified will be cloned/updated.'
     )
     parser.add_argument(
@@ -275,7 +278,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.repos_csv_file, args.repo)
+    list_repos = util.get_repos_from_csv(args.repos_csv_file, args.team)
 
     if len(list_repos) == 0:
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
@@ -284,7 +287,8 @@ if __name__ == "__main__":
     open(args.file_timestamps, 'w')
 
     print(args)
-    print(f"Start cloning repos at: {datetime.datetime.now(tz=TIMEZONE).strftime('%Y-%m-%d-%H-%M-%S')}")
+    print(f"Start cloning repos at: {get_time_now()}")
+
 
 
     # Perform the ACTUAL CLONING of all teams in list_teams
@@ -296,23 +300,32 @@ if __name__ == "__main__":
 
     # Write the submission timestamp file
     logging.warning('Producing timestamp csv file...')
+    TIMESTAMP_HEADER = ['team', 'submitted_at', 'commit', 'tag', 'tagged_at',
+                                                       'no_commits', 'status']
 
     # Make a backup of an existing cvs timestamp file there is one
     if os.path.exists(args.file_timestamps):
-        time_now = datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
+        logging.warning(f'Making a backup of existing timestamp file {args.file_timestamps}.')
+        f = open(args.file_timestamps, 'r')
+        print(args.file_timestamps, f.readlines())
+        # timestamp_back = list(csv.DictReader(f))    # read current timestamp file if exists
+        timestamp_back = list(csv.DictReader(f, fieldnames=TIMESTAMP_HEADER))
+        print(timestamp_back)
+
+        time_now = get_time_now()
+        #TODO: somehow it leaves an empty copy if filename contains underscore _
         shutil.copy(args.file_timestamps, f'{args.file_timestamps}-{time_now}.bak')
-        teams_csv = list(csv.DictReader(open(args.file_timestamps)))
 
     with open(args.file_timestamps, 'w') as csv_file:
         submission_writer = csv.DictWriter(csv_file,
-                                           fieldnames=['team', 'submitted_at', 'commit', 'tag', 'tagged_at',
-                                                       'no_commits', 'status'])
+                                           fieldnames=TIMESTAMP_HEADER)
         submission_writer.writeheader()
 
         # if only a specific repo was asked, just migrate all the other rows from the previous file first
-        if args.repo and teams_csv:
-            for row in list(teams_csv):
-                if row['team'] != args.repo:
+        print(timestamp_back)
+        if args.team and timestamp_back:
+            for row in timestamp_back:
+                if row['team'] != args.team:
                     submission_writer.writerow(row)
 
         # now dump all the teams that have been cloned into the csv timestamp file
