@@ -17,15 +17,12 @@ One could also use pygit2 (https://www.pygit2.org/), which are bindings to the l
 __author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__   = "Copyright 2018-2021"
 
-import datetime
 import shutil
 import os
 import sys
 import argparse
 import csv
-import logging
 import traceback
-import pytz
 import util
 
 # https://gitpython.readthedocs.io/en/stable/reference.html
@@ -34,12 +31,13 @@ import git
 
 # from git import Repo, Git
 
-
-
+import logging
 # logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG, datefmt='%a, %d %b %Y %H:%M:%S')
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
                     level=logging.INFO, datefmt='%a, %d %b %Y %H:%M:%S')
 
+import datetime
+import pytz
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
 TIMEZONE = pytz.timezone('Australia/Melbourne')
 
@@ -268,6 +266,7 @@ if __name__ == "__main__":
     )
     # we could also use vars(parser.parse_args()) to make args a dictionary args['<option>']
     args = parser.parse_args()
+    print(f"Runing the script on: {get_time_now()}", flush=True)
 
     if not os.path.exists(args.repos_csv_file):
         print(f"Repo CSV database {args.repos_csv_file} does not exists!")

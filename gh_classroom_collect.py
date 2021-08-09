@@ -28,8 +28,13 @@ CSV_GITHUB_IDENTIFIER= "identifier"
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO,
                     datefmt='%a, %d %b %Y %H:%M:%S')
 
+import datetime
+import pytz
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
+TIMEZONE = pytz.timezone('Australia/Melbourne')
 
+def get_time_now():
+    return datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
 
 
 def print_repo_info(repo):
@@ -60,7 +65,7 @@ def print_repo_info(repo):
     except:
         pass
 
-
+import time
 
 if __name__ == '__main__':
     parser = ArgumentParser(
@@ -75,6 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--student-map', help=f"CSV file mapping repo suffix ({CSV_GITHUB_USERNAME}) to "
                                                  f"student ids ({CSV_GITHUB_IDENTIFIER}).")
     args = parser.parse_args()
+    print(args)
+    print(f"Runing the script on: {get_time_now()}", flush=True)
 
     REPO_URL_PATTERN = re.compile(r'^{}/{}-(.*)$'.format(args.ORG_NAME, args.ASSIGNMENT_PREFIX))
 
