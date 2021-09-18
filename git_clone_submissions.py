@@ -13,6 +13,22 @@ GitPython provides object model access to your git repository.
     python3 -m pip install gitpython pytz
 
 One could also use pygit2 (https://www.pygit2.org/), which are bindings to the libgit2 shared library
+
+
+Manual debug via gitpython:
+
+    >>> import git
+    >>> repo = git.Repo("submissions/deepyellow2")
+    >>> repo.common_dir
+    /mnt/ssardina-volume/cosc1125-1127-AI/AI21/p-contest/preliminary/submissions/deepyellow2/.git
+    >>> repo.remote()
+    <git.Remote "origin">
+    >>> repo.remote().exists()
+    True
+    >>> repo.remote('origin').fetch(tags=True,force=True)
+    [<git.remote.FetchInfo object at 0x7fd4469054f0>, <git.remote.FetchInfo object at 0x7fd446905ae0>, <git.remote.FetchInfo object at 0x7fd446905a40>, <git.remote.FetchInfo object at 0x7fd4469059a0>, <git.remote.FetchInfo object at 0x7fd446905900>, <git.remote.FetchInfo object at 0x7fd446905b80>, <git.remote.FetchInfo object at 0x7fd446905c70>, <git.remote.FetchInfo object at 0x7fd446905cc0>, <git.remote.FetchInfo object at 0x7fd446905d60>, <git.remote.FetchInfo object at 0x7fd446905e50>]
+
+
 """
 __author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__   = "Copyright 2018-2021"
@@ -167,7 +183,9 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 logging.info(f'Existing LOCAL submission for {team_name} dated {submission_time_local}; updating it...')
 
                 # Next, update the repo to check if there is a new updated submission time for submission tag
-                repo.remote('origin').fetch(tags=True)
+                # https://gitpython.readthedocs.io/en/stable/reference.html#git.remote.Remote.fetch
+                # As of Git 2.2, we need to force to allow overwriting existint tags!
+                repo.remote('origin').fetch(tags=True,force=True)
                 submission_time, submission_commit, tagged_time = get_tag_info(repo, tag_str)
                 if submission_time is None:  # tag has been deleted! remove local repo, no more submission
                     teams_missing.append(team_name)
@@ -191,7 +209,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                     status = 'updated'
             except git.GitCommandError as e:
                 teams_missing.append(team_name)
-                logging.warning(f'Problem with existing repo for team {team_name}; removing it: {e.stderr}')
+                logging.warning(f'Problem with existing repo for team {team_name}; removing it: {e} - {e.stderr}')
                 print('\n')
                 repo.close()
                 shutil.rmtree(git_local_dir)
