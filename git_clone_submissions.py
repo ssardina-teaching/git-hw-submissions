@@ -70,7 +70,7 @@ def get_tag_info(repo:git.Repo, tag_str):
     :param tag_str: the tag in the repo
     :return: the tag's commit time, the tag's commit, the time it was tagged
     """
-    if tag_str == 'master':
+    if tag_str in ['master', 'main']:
         tag_commit = repo.commit()
     else:
         tag = next((tag for tag in repo.tags if tag.name == tag_str), None)
@@ -212,7 +212,6 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 logging.warning(f'Problem with existing repo for team {team_name}; removing it: {e} - {e.stderr}')
                 print('\n')
                 repo.close()
-                shutil.rmtree(git_local_dir)
                 continue
             except KeyboardInterrupt:
                 logging.warning('Script terminated via Keyboard Interrupt; finishing...')
