@@ -133,7 +133,7 @@ if __name__ == '__main__':
                     "CSV HEADERS: ORG_NAME, ASSIGNMENT, REPO_ID, REPO_NAME, REPO_GIT")
     parser.add_argument('REPO_CSV', help="List of repositories to get data from.")
     parser.add_argument('CSV_OUT', help="File to output the stats of authors.")
-    parser.add_argument('--repo', help='if given, only the team specified will be cloned/updated.')
+    parser.add_argument('--team', help='if given, only the team specified will be parsed.')
     parser.add_argument('--tag', help='if given, check up to a given tag.')
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repo)
+    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.team)
 
     if len(list_repos) == 0:
         logging.warning(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
