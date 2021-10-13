@@ -114,7 +114,7 @@ The input csv file must have the fields:
 Example:
 
 ```bash
-python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
+$ python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
 ```
 
 ### Some useful commands

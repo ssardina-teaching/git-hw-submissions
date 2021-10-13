@@ -18,18 +18,18 @@ import util
 
 WIKI_DIR = 'wiki'
 
-
-REPOS_EXCEPT = ['math-club-2',
-                'jsj-2020-contest',
-                'crackman',
-                'tupacman2',
-                'chaino1'
-                'threelittlebirds2',
-                'ai-jr-rw2',
-                'mitsubishi-lancer-evolution-x',
-                'compulsive-eater-ghost-triad2',
-                'loginquitas-duo',
-                'alphabetagamma']
+REPOS_EXCEPT = []
+# REPOS_EXCEPT = ['math-club-2',
+#                 'jsj-2020-contest',
+#                 'crackman',
+#                 'tupacman2',
+#                 'chaino1'
+#                 'threelittlebirds2',
+#                 'ai-jr-rw2',
+#                 'mitsubishi-lancer-evolution-x',
+#                 'compulsive-eater-ghost-triad2',
+#                 'loginquitas-duo',
+#                 'alphabetagamma']
 
 
 def push_wiki(repo_id,  first_commit_name, no_commits):
@@ -68,13 +68,16 @@ if __name__ == '__main__':
     # push wiki template if
     for r in list_repos:
         print(f'*** Processing repo {r["REPO_NAME"]}')
+
+        # get the specific link for the Wiki
         wiki_repo = f'git@github.com:{r["REPO_NAME"]}.wiki.git'
         print(f'\t*** Wiki name: {wiki_repo}')
 
+        # fresh clone of student wiki repo into folder WIKI_DIR/
         if os.path.exists(WIKI_DIR):
             shutil.rmtree(WIKI_DIR)
-
         repo = git.Repo.clone_from(wiki_repo, WIKI_DIR)
+
         commits = list(repo.iter_commits("master", max_count=5))
 
         if args.force or push_wiki(r['REPO_ID'], commits[0].author.name, len(commits)):
