@@ -23,23 +23,32 @@ echo
 #########################
 # HERE GOES THE SCRIPT
 #########################
-
 for d in $1/*/ ; do
-    echo "Processing $d"
+    echo "=================> Processing $d"
+
+    git -C $d pull
+
+    ######################################################
+    # HERE IS WHERE WE DO THE CHANGES TO THE REPO IN $d/
+    ######################################################
+    # Get into student repo, add, commit and push 
+    sed -i -e "s/question8/question6/g" $d/analysis.py
+    MESSAGE = "Fixed typo question8() -> question6()"
 
     ## Copy good files into student repo
-    cp pacman-p1-search.git/pacman.py $d/
+    # cp pacman-p1-search.git/pacman.py $d/
+    # MESSAGE = "Updated pacman.py; fix foodEdible issue"
 
-    # Get into student repo, add, commit and push 
-    cd $d
-    echo $PWD
-    git pull
-    git add .
-    git commit -m "Updated pacman.py; fix foodEdible issue"
-    git push
+    ######################################################
+    # FINISH CHANGES
+    ######################################################
+
+    git -C $d add .
+    git -C $d commit -m $MESSAGE
+    git -C $d push
 
     # Get out of student repo (ready to process next)
-    cd -
     echo
-done
+done;
+
 
