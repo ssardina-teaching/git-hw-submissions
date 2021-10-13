@@ -273,8 +273,9 @@ if __name__ == "__main__":
         help='the folder where to clone all repositories.'
     )
     parser.add_argument(
-        '--team',
-        help='if given, only the team specified will be cloned/updated.'
+        '--teams',
+        nargs='+',
+        help='if given, only the teams specified will be cloned/updated.'
     )
     parser.add_argument(
         '--file-timestamps',
@@ -294,7 +295,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.repos_csv_file, args.team)
+    list_repos = util.get_repos_from_csv(args.repos_csv_file, args.teams)
 
     if len(list_repos) == 0:
         logging.warning(f'No repos found in the mapping file "{args.repos_csv_file}". Stopping.')
