@@ -31,18 +31,6 @@ REPOS_EXCEPT = []
 #                 'loginquitas-duo',
 #                 'alphabetagamma']
 
-
-def push_wiki(repo_id,  first_commit_name, no_commits):
-    if repo_id in REPOS_EXCEPT:
-        print(f'\t\t\t Will update because it is on exception list')
-        return True
-    if first_commit_name == 'Sebastian Sardina' and no_commits == 1:
-        print(f'\t\t\t Will update because of author and no of commits')
-        return True
-    return False
-
-
-
 if __name__ == '__main__':
     parser = ArgumentParser(
         description="Push a template Wiki in GitHib Wiki pages form a list of repos")
@@ -51,13 +39,15 @@ if __name__ == '__main__':
     parser.add_argument(
         'WIKI_TEMPLATE', help='folder where the wiki template is located.')
     parser.add_argument(
-        '--repo', help='if given, only the team specified will be cloned/updated.')
+        '--repos', '--teams',
+        nargs='+',
+        help='if given, only the team specified will be cloned/updated.')
     parser.add_argument('--force', action='store_true',
                         help='push it even if there exists a Wiki with commits.')
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repo)
+    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
 
     if len(list_repos) == 0:
         print(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
@@ -80,7 +70,11 @@ if __name__ == '__main__':
 
         commits = list(repo.iter_commits("master", max_count=5))
 
-        if args.force or push_wiki(r['REPO_ID'], commits[0].author.name, len(commits)):
+        #  should we skip the repo?
+        skip = len(commits) > 1
+        # skip = len(commits) > 1 or first_commit_name != 'Sebastian Sardina'
+        
+        if args.force or not skip:
             os.system(f"cp -rf {args.WIKI_TEMPLATE}/* {WIKI_DIR}/")
             repo.index.add(['*'])
             repo.index.commit('Init Wiki template. Enjoy!')
