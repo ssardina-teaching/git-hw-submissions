@@ -321,7 +321,7 @@ if __name__ == "__main__":
     if os.path.exists(args.file_timestamps):
         logging.warning(f'Making a backup of existing timestamp file {args.file_timestamps}.')
         with open(args.file_timestamps, 'r') as f:
-            timestamp_back = list(csv.DictReader(f))    # read current timestamp file if exists
+            timestamp_bak = list(csv.DictReader(f))    # read current timestamp file if exists
             # timestamp_back = list(csv.DictReader(f, fieldnames=TIMESTAMP_HEADER))
 
         time_now = get_time_now()
@@ -332,10 +332,10 @@ if __name__ == "__main__":
                                            fieldnames=TIMESTAMP_HEADER)
         submission_writer.writeheader()
 
-        # if only a specific repo was asked, just migrate all the other rows from the previous file first
-        if args.team and timestamp_back:
-            for row in timestamp_back:
-                if row['team'] != args.team:
+        # if specific team repos were asked, migrate all the other rows from the previous file first
+        if args.teams and timestamp_bak:
+            for row in timestamp_bak:
+                if row['team'] not in args.team:
                     submission_writer.writerow(row)
 
         # now dump all the teams that have been cloned into the csv timestamp file
