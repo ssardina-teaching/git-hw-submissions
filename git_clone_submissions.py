@@ -335,7 +335,7 @@ if __name__ == "__main__":
         # if specific team repos were asked, migrate all the other rows from the previous file first
         if args.teams and timestamp_bak:
             for row in timestamp_bak:
-                if row['team'] not in args.team:
+                if row['team'] not in args.teams:
                     submission_writer.writerow(row)
 
         # now dump all the teams that have been cloned into the csv timestamp file
