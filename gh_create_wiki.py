@@ -80,7 +80,7 @@ if __name__ == '__main__':
             repo.index.commit('Init Wiki template. Enjoy!')
             try:
                 repo.remotes.origin.push()
-                print(f'\t\t Success pushing wiki template into  {r["REPO_NAME"]}')
+                print(f'\t\t Success pushing wiki template into https://github.com/{r["REPO_NAME"]}/wiki')
             except:
                 print(f'\t\t Error pushing repo {r["REPO_NAME"]}')
         else:
