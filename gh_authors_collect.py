@@ -17,22 +17,27 @@ import base64
 import csv
 import re
 import traceback
+import os
 
 from argparse import ArgumentParser
-import logging
 import util
 from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
-CSV_GITHUB_USERNAME="github_username"
-CSV_GITHUB_IDENTIFIER= "identifier"
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO,
-                    datefmt='%a, %d %b %Y %H:%M:%S')
+import logging
+import coloredlogs
+LOGGING_FMT="%(asctime)s %(levelname)-8s %(message)s"
+LOGGING_DATE="%a, %d %b %Y %H:%M:%S"
+LOGGING_LEVEL=logging.INFO
+logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
+CSV_HEADER = ['REPO_ID', 'AUTHOR', 'COMMITS', 'ADDITIONS', "DELETIONS"]
 
+GH_URL_PREFIX="https://github.com/"
 
 
 def print_repo_info(repo):
@@ -162,25 +167,35 @@ if __name__ == '__main__':
     # Process each repo in list_repos
     authors_stats = []
     for r in list_repos:
-        print(f'*** Processing repo {r["REPO_NAME"]}...')
+        repo_id = r["REPO_ID"]
+        repo_url = f"https://github.com/{repo_id}"
+        logging.info(f'Processing repo {repo_id} ({repo_url})...')
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(g, r["REPO_NAME"], sha=args.tag)
-        except:
-            print('\t NONE - SKIP')
+        except e:
+            logging.info(f'\t Exception repo {repo_id}: {e}')
             continue
-        print(f'\t finished with {no_commits} commits by {len(author_commits)} authors.')
-        authors_stats.append((r["REPO_ID"], author_commits, author_add, author_del))
+        logging.info(f'\t Repo {repo_id} has {no_commits} commits by {len(author_commits)} authors.')
+        authors_stats.append((repo_id, author_commits, author_add, author_del))
 
 
-    # Produce CSV file output with all repos if requested via option --csv
-    logging.info(f'List of author stats will be saved to CSV file *{args.CSV_OUT}*.')
-    with open(args.CSV_OUT, 'w') as output_csv_file:
-        csv_writer = csv.DictWriter(output_csv_file,
-                                    fieldnames=['REPO_ID', 'AUTHOR', 'COMMITS', 'ADDITIONS', "DELETIONS"])
-        csv_writer.writeheader()
+    # Produce/Update CSV file output with all repos if requested via option --csv
+    # first check if we are updating a file
+    rows_to_csv = []
+    if os.path.exists(args.CSV_OUT):
+        logging.info(f'Updating teams in existing CSV file *{args.CSV_OUT}*.')
+        with open(args.CSV_OUT, 'r') as f:
+            csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
 
-        # for each repo in repo_select produce a row in the CSV file, add the team name from mapping
-        for x in authors_stats: # x = (repo_name, dict_authors_commits)
+            next(csv_reader)  # skip header
+            for row in csv_reader:
+                if row['REPO_ID'] not in args.teams:
+                    rows_to_csv.append(row)
+    else:
+        logging.info(f'List of author stats will be saved to CSV file *{args.CSV_OUT}*.')
+
+    # next build the rows for the repo inspected for update
+    for x in authors_stats: # x = (repo_name, dict_authors_commits)
             for author in x[1]:
                 row = {}
                 row['REPO_ID'] = x[0]
@@ -188,5 +203,11 @@ if __name__ == '__main__':
                 row['COMMITS'] = x[1][author]
                 row['ADDITIONS'] = x[2][author]
                 row['DELETIONS'] = x[3][author]
+                rows_to_csv.append(row)
 
-                csv_writer.writerow(row)
+    # finally, write to csv the whole pack of rows (old and updated)
+    with open(args.CSV_OUT, 'w') as output_csv_file:
+        csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER)
+        csv_writer.writeheader()
+        csv_writer.writerows(rows_to_csv)
+
