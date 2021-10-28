@@ -172,7 +172,7 @@ if __name__ == '__main__':
         logging.info(f'Processing repo {repo_id} ({repo_url})...')
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(g, r["REPO_NAME"], sha=args.tag)
-        except e:
+        except Exception as e:
             logging.info(f'\t Exception repo {repo_id}: {e}')
             continue
         logging.info(f'\t Repo {repo_id} has {no_commits} commits by {len(author_commits)} authors.')
