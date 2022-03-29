@@ -1,6 +1,6 @@
-# Other scripts
+# GitHub scripts
 
-Under [other-scripts/](other-scripts) folder.
+**DISCLAIMER:** Many of these scripts are in "dirty" states, they are just draft.
 
 ## Scrape Github repositories
 
@@ -12,7 +12,6 @@ Script `gh_scrape.py` collects information in CSV files on various searches.
 * Github search limits: https://developer.github.com/v3/search/#rate-limit
     * 5000 per hour total (and 30 per minute for search API)
 * Github search API: https://developer.github.com/v3/search/
-
 
 ## Clone set of GitHub repo
 
