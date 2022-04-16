@@ -189,7 +189,7 @@ if __name__ == '__main__':
 
             next(csv_reader)  # skip header
             for row in csv_reader:
-                if row['REPO_ID'] not in args.teams:
+                if args.teams is not None and row['REPO_ID'] not in args.teams:
                     rows_to_csv.append(row)
     else:
         logging.info(f'List of author stats will be saved to CSV file *{args.CSV_OUT}*.')
