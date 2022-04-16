@@ -122,7 +122,8 @@ def clone_team_repos(list_repos, tag_str, output_folder):
     teams_noteam = []
     for c, row in enumerate(list_repos, 1):
         print('\n')
-        logging.info(f'Processing {c}/{no_repos} team **{row[CSV_REPO_ID]}** in git url {row[CSV_REPO_GIT]}.')
+        http_repo_link = row[CSV_REPO_GIT].replace("git@github.com:", "http://github.com/")
+        logging.info(f'Processing {c}/{no_repos} team **{row[CSV_REPO_ID]}** in git url {http_repo_link}.')
 
         team_name = row[CSV_REPO_ID]
         if not team_name:
