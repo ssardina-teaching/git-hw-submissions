@@ -107,7 +107,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
          team_new: teams that are new
          team_updated: teams that were there and got a new version in the tag
          team_unchanged: teams that were there but with the same tag version
-         team_missing: teams that where not clonned
+         team_missing: teams that where not cloned
     """
     no_repos = len(list_repos)
     list_repos.sort(key=lambda tup: tup[CSV_REPO_ID].lower())  # sort the list of teams
@@ -228,10 +228,10 @@ def clone_team_repos(list_repos, tag_str, output_folder):
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         teams_cloned.append(
             {'team': team_name,
-             'submitted_at': new_commit_time,
+             'submitted_at': new_commit_time.strftime(util.DATE_FORMAT),
              'commit': new_commit,
              'tag': tag_str,
-             'tagged_at': new_tagged_time,
+             'tagged_at': new_tagged_time.strftime(util.DATE_FORMAT),
              'no_commits': no_commits,
              'status': status})
 

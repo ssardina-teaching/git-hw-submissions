@@ -7,6 +7,7 @@ import git
 import datetime
 import pytz
 DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
+DATE_FORMAT = '%d/%m/%Y %H:%M:%S' 
 TIMEZONE = pytz.timezone('Australia/Melbourne')
 
 
@@ -78,3 +79,5 @@ def get_tag_info(repo:git.Repo, tag_str="head"):
 
 def get_time_now():
     return datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
+
+
