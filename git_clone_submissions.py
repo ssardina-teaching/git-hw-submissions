@@ -324,7 +324,8 @@ if __name__ == "__main__":
     TIMESTAMP_HEADER = ['team', 'submitted_at', 'commit', 'tag', 'tagged_at',
                                                        'no_commits', 'status']
 
-    # Make a backup of an existing cvs timestamp file there is one
+    # Make a backup of an existing cvs timestamp file, if there is one
+    timestamp_bak = None
     if os.path.exists(args.file_timestamps):
         logging.warning(f'Making a backup of existing timestamp file {args.file_timestamps}.')
         with open(args.file_timestamps, 'r') as f:
@@ -339,8 +340,8 @@ if __name__ == "__main__":
                                            fieldnames=TIMESTAMP_HEADER)
         submission_writer.writeheader()
 
-        # if specific team repos were asked, migrate all the other rows from the previous file first
-        if args.teams and timestamp_bak:
+        # migrate all the other rows from the previous timestamp file, if needed
+        if args.teams and timestamp_bak is not None:
             for row in timestamp_bak:
                 if row['team'] not in args.teams:
                     submission_writer.writerow(row)
