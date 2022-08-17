@@ -39,6 +39,7 @@ CSV_HEADER = ['REPO_ID', 'AUTHOR', 'COMMITS', 'ADDITIONS', "DELETIONS"]
 
 GH_URL_PREFIX="https://github.com/"
 
+IGNORE_USERS=["ssardina","web-flow", "github-classroom[bot]", "axelahmer", "AndrewPaulChester"]
 
 def print_repo_info(repo):
     # repository full name
@@ -83,14 +84,30 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
 
     :param g: handle to GitHub
     :param repo_name: name of the repository (owner + name)
-    :param sha: if given, up to that commit
+    :param sha: if given, up to that commit; otherwise parse all branches
     :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
     '''
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html?highlight=tag#github.Repository.Repository.get_git_tag
     repo = g.get_repo(repo_name)
     
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
-    repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
+    # repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
+    if sha is not None:
+        repo_commits = repo.get_commits(sha=sha)
+    else:
+        repo_branches = repo.get_branches()
+        repo_commits = []
+        for branch in repo_branches:
+            name_branch = branch.name
+            print(name_branch)
+            commits_branch = repo.get_commits(sha=name_branch)
+            for c in commits_branch:
+                print(c)
+            print(commits_branch.totalCount)
+            repo_branches.append(commits_branch)
+        
+    
+    
     no_commits = repo_commits.totalCount
 
     author_commits = {}
@@ -101,6 +118,9 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
             author_id = c.author.login
         except:
             author_id = f'name({c.commit.author.name})'
+            
+        if author_id in IGNORE_USERS:
+            continue
 
         author_commits[author_id] = author_commits.get(author_id, 0) + 1
         author_additions[author_id] = author_additions.get(author_id, 0) + c.stats.additions
@@ -204,6 +224,9 @@ if __name__ == '__main__':
                 row['ADDITIONS'] = x[2][author]
                 row['DELETIONS'] = x[3][author]
                 rows_to_csv.append(row)
+    
+    # sort by repo id first, then author
+    rows_to_csv.sort(key = lambda x: (x['REPO_ID'], x['AUTHOR']))
 
     # finally, write to csv the whole pack of rows (old and updated)
     with open(args.CSV_OUT, 'w') as output_csv_file:
