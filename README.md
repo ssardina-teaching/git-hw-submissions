@@ -1,5 +1,7 @@
 # Submission Management Support Scripts
 
+REPO: https://github.com/ssardina-teaching/git-hw-submissions
+
 These are some useful scripts that I use in teaching:
 
 * `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment.
@@ -160,3 +162,4 @@ This script allows to commit and push changes to a collection of repos; for exam
 - GitHub REST documentation: https://docs.github.com/en/rest
 - PyGithub: https://github.com/PyGithub/PyGithub
 - gitpython: http://www.legendu.net/misc/blog/hands-on-GitPython/
+- gh API CLI tool: https://github.com/cli/cli ([manual](https://cli.github.com/manual/))

@@ -6,6 +6,7 @@
   - [Using git CLI](#using-git-cli)
     - [Tagging](#tagging)
   - [Using the REST API](#using-the-rest-api)
+  - [Using `gh` CLI api tool](#using-gh-cli-api-tool)
 
 
 ## Using PyGithub
@@ -142,6 +143,34 @@ $ curl \
   -u ssardina:$GHTOKEN -X DELETE \
   -H "Accept: application/vnd.github.v3+json" \
   https://api.github.com/repos/RMIT-COSC1127-1125-AI21/p0-warmup-msardina/branches/master/protection 
+```
+
+
+To check all commis in branch `Dev`:
 
 ```
+$ curl  -H "Accept: application/vnd.github+json"  \
+  -H "Authorization: token $GHTOKEN" \
+  https://api.github.com/repos/RMIT-COSC1127-1125-AI22/p2-pacmanmasters/commits\?sha=Dev
+```
+
+## Using `gh` CLI api tool
+
+The `gh` command line tool makes accessing the GH API easier
+
+- You can get the tool from: https://github.com/cli/cli 
+- Manual: https://cli.github.com/manual/
+
+First, you need to authenticate:
+
+```shell
+$ gh auth login --with-token < ~/.ssh/keys/gh-token-ssardina.txt
+```
+
+Then we can use the following to get all collaborators of a repo:
+
+```shell
+$ gh api -H "Accept: application/vnd.github+json" repos/RMIT-COSC1127-1125-AI22/p2-artificialidiot/collaborators
+```
+
 
