@@ -1,12 +1,12 @@
 """
 Script to push a Wiki template to repos in a CSV file
 
-python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
+ $ python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
 
 Uses GitPython https://gitpython.readthedocs.io/en/stable/index.html
 """
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2020"
+__copyright__ = "Copyright 2019-2022"
 
 import os
 import shutil
