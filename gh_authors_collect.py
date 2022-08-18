@@ -101,17 +101,17 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
     # first, collect ALL commits from ALL branches (if sha) for the contributors
     contributors = [x.login for x in repo.get_collaborators() if not x.login in IGNORE_USERS]
-    repo_commits = []
+    repo_commits = set()
     if sha is not None: # a particular branch/sha has been given
-        repo_commits = list(repo.get_commits(sha=sha))
+        repo_commits = set(repo.get_commits(sha=sha))
     else:
         repo_branches = repo.get_branches()
         for branch in repo_branches:
             name_branch = branch.name
             logging.debug("Processing branch: ", name_branch)
             branch_commits = list(repo.get_commits(sha=name_branch))
-            repo_commits = repo_commits + branch_commits
-        
+            repo_commits = repo_commits.union(branch_commits)   # union bc there will be same shared sha commits
+    
     no_commits = len(repo_commits)
     
     # now count each author contribution
