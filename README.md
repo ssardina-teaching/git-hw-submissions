@@ -13,18 +13,26 @@ Other scripts (under [`other-scripts/`](other-scripts/) folder):
 * `gh_scrape_scrape.py`: Scrape GitHub for repo info via searches.
 * `gh_clone_repos.py`: Clones set of GitHub repo.
 
-All this scripts were tested under Python 3.6.
-
-## Setup
+All this scripts were tested under Python 3.6+
 
 To install all requirements:
 
 ```bash
-sudo apt install python3-pip
-sudo pip3 install -r requirements.txt
+$ sudo pip install -r requirements.txt
 ```
 
-## Extract repos from a GitHub Classroom/Organization
+
+- [Submission Management Support Scripts](#submission-management-support-scripts)
+  - [`gh_classroom_collect.py`: collect repos from a GH Organizations](#gh_classroom_collectpy-collect-repos-from-a-gh-organizations)
+  - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
+  - [`gh_authors_collect.py`: extract author commit stats](#gh_authors_collectpy-extract-author-commit-stats)
+  - [`gh_create_wiki.py`: push Wiki template to list of repos](#gh_create_wikipy-push-wiki-template-to-list-of-repos)
+  - [Some useful commands](#some-useful-commands)
+  - [`git_batch_commit.sh`: a shell script template to make changes to a collection of repos.](#git_batch_commitsh-a-shell-script-template-to-make-changes-to-a-collection-of-repos)
+  - [Links](#links)
+
+
+## `gh_classroom_collect.py`: collect repos from a GH Organizations
 
 The script `gh_classroom_collect.py` produces a CSV file with all the repos in a given GitHub Classroom for a particular assignment.
 
@@ -63,7 +71,7 @@ Next, we can use that CSV file to clone the corresponding repos at a given tag `
 $ python ../git-hw-submissions.git/git_clone_submissions.py --file-timestamps test/cosc1127_timestamps.csv p0/cosc1127-repos-p0.csv submission p0/
 ```
 
-## Clone GIT-based Homework Submissions  
+## `git_clone_submissions.py`: batch git cloning
 
 Script `git_clone_submissions.py` clones a set of student/team repositories listed in a CSV file at a given _tagged_ commit.  The CVS file should contain the team name (under column name `TEAM`) and a GIT ssh link (under column name `GIT-URL`).
 
@@ -92,7 +100,7 @@ To just clone the last commit in the master branch, use `master` as the tag.
 
 The timezone used is defined by constant `TIMEZONE` in the script (default to Australia/Melbourne time zone).
 
-## Extract author commit stats
+## `gh_authors_collect.py`: extract author commit stats
 
 Given a CSV file with a collection of repositories, extract in a CSV file how many commits each author has done per repo. For example:
 
@@ -109,7 +117,7 @@ The input csv file must have the fields:
 * `REPO_NAME`: the full repo name: owner/organization + name of repo.
 * `REPO_ID`: the id of the repo (e.g., team name).
 
-## Push Wiki template to a list of repos
+## `gh_create_wiki.py`: push Wiki template to list of repos
 
 Example:
 
@@ -117,7 +125,7 @@ Example:
 $ python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
 ```
 
-### Some useful commands
+## Some useful commands
 
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
 
@@ -143,3 +151,12 @@ To copy just the new zip files:
 rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project-4/zip-submissions/
 ```
 
+## `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
+
+This script allows to commit and push changes to a collection of repos; for example to make edits to students' repos after they have been created.
+
+## Links
+
+- GitHub REST documentation: https://docs.github.com/en/rest
+- PyGithub: https://github.com/PyGithub/PyGithub
+- gitpython: http://www.legendu.net/misc/blog/hands-on-GitPython/

@@ -10,7 +10,7 @@ Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 """
 __author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__   = "Copyright 2020"
+__copyright__   = "Copyright 2019-2022"
 
 import base64
 import csv

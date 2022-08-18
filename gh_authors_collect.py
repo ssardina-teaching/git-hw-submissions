@@ -7,11 +7,13 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
 PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
 
+Library uses REST API: https://docs.github.com/en/rest
+
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 """
 __author__      = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__   = "Copyright 2020"
+__copyright__   = "Copyright 2019-2022"
 
 import base64
 import csv
