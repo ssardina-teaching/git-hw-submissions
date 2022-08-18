@@ -83,6 +83,9 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     '''
     Extracts commit stats for a repo up to some sha/tag by inspecting each commit
     This will even parse commits that have no author login as it will extract base git commit email info
+    
+    Note: we need to traverse each branch to get all commits of various contributors. 
+        this is because using repo.get_stats_contributors() will only give us the contributions to the main branch!
 
     :param g: handle to GitHub
     :param repo_name: name of the repository (owner + name)
@@ -92,26 +95,26 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html?highlight=tag#github.Repository.Repository.get_git_tag
     repo = g.get_repo(repo_name)
     
+    
+       
+   
     # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
-    # repo_commits = repo.get_commits(sha=sha) if sha is not None else repo.get_commits()
-    if sha is not None:
-        repo_commits = repo.get_commits(sha=sha)
+    # first, collect ALL commits from ALL branches (if sha) for the contributors
+    contributors = [x.login for x in repo.get_collaborators() if not x.login in IGNORE_USERS]
+    repo_commits = []
+    if sha is not None: # a particular branch/sha has been given
+        repo_commits = list(repo.get_commits(sha=sha))
     else:
         repo_branches = repo.get_branches()
-        repo_commits = []
         for branch in repo_branches:
             name_branch = branch.name
-            print(name_branch)
-            commits_branch = repo.get_commits(sha=name_branch)
-            for c in commits_branch:
-                print(c)
-            print(commits_branch.totalCount)
-            repo_branches.append(commits_branch)
+            logging.debug("Processing branch: ", name_branch)
+            branch_commits = list(repo.get_commits(sha=name_branch))
+            repo_commits = repo_commits + branch_commits
         
+    no_commits = len(repo_commits)
     
-    
-    no_commits = repo_commits.totalCount
-
+    # now count each author contribution
     author_commits = {}
     author_additions = {}
     author_deletions = {}
@@ -190,14 +193,15 @@ if __name__ == '__main__':
     authors_stats = []
     for r in list_repos:
         repo_id = r["REPO_ID"]
-        repo_url = f"https://github.com/{repo_id}"
+        repo_name = r["REPO_NAME"]
+        repo_url = f"https://github.com/{repo_name}"
         logging.info(f'Processing repo {repo_id} ({repo_url})...')
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(g, r["REPO_NAME"], sha=args.tag)
         except Exception as e:
             logging.info(f'\t Exception repo {repo_id}: {e}')
             continue
-        logging.info(f'\t Repo {repo_id} has {no_commits} commits by {len(author_commits)} authors.')
+        logging.info(f'\t Repo {repo_id} has {no_commits} commits from {len(author_commits)} authors.')
         authors_stats.append((repo_id, author_commits, author_add, author_del))
 
 
