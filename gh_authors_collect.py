@@ -112,8 +112,6 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
             branch_commits = list(repo.get_commits(sha=name_branch))
             repo_commits = repo_commits.union(branch_commits)   # union bc there will be same shared sha commits
     
-    no_commits = len(repo_commits)
-    
     # now count each author contribution
     author_commits = {}
     author_additions = {}
@@ -130,6 +128,8 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
         author_commits[author_id] = author_commits.get(author_id, 0) + 1
         author_additions[author_id] = author_additions.get(author_id, 0) + c.stats.additions
         author_deletions[author_id] = author_deletions.get(author_id, 0) + c.stats.deletions
+
+    no_commits = sum([author_commits[author_id] for author_id in author_commits])
 
     return no_commits, author_commits, author_additions, author_deletions
 
