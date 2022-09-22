@@ -166,7 +166,7 @@ if __name__ == '__main__':
     parser.add_argument('--teams', 
         nargs='+',
         help='if given, only the teams specified will be parsed.')
-    parser.add_argument('--tag', help='if given, check up to a given tag.')
+    parser.add_argument('--tag', help='if given, check up to a given tag (otherwise all repo).')
     parser.add_argument('-u', '--user', help="GitHub username.")
     parser.add_argument('-t', '--token-file', help="File containing GitHub authorization token/password.")
     parser.add_argument('-p', '--password', help="GitHub username's password.")

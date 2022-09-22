@@ -112,7 +112,7 @@ python3 git-hw-submissions.git/gh_authors_collect.py -u ssardina \
     --tag submission ai20-p2-repos.csv ai20-p2-authors.csv
 ```
 
-The `--tag` option restricts to tags finishing in a given tag.
+The `--tag` option restricts to tags finishing in a given tag. If no tag is given, the whole repo is parsed.
 
 The input csv file must have the fields:
 
