@@ -116,10 +116,11 @@ def get_stats_contrib_repo(g : Github, repo_name, sha=None):
     author_commits = {}
     author_additions = {}
     author_deletions = {}
-    for c in repo_commits:
+    for c in repo_commits:  # c is <class 'github.Commit.Commit'> https://pygithub.readthedocs.io/en/latest/github_objects/Commit.html
         try:
-            author_id = c.author.login
-        except:
+            author_id = c.author.login # c.author is a github.NamedUser.NamedUser - https://pygithub.readthedocs.io/en/latest/github_objects/NamedUser.html#github.NamedUser.NamedUser
+        except Exception as e:
+            # Commits is not attached to a GitHub account, just get whatever text name was used
             author_id = f'name({c.commit.author.name})'
             
         if author_id in IGNORE_USERS:
