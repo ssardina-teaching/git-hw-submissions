@@ -223,7 +223,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
                 shutil.rmtree(git_local_dir)
                 continue
 
-        no_commits = repo.git.rev_list('--count', tag_str)  # get the no of commits tracing to the tag
+        no_commits = repo.git.rev_list('--count', f"tags/{tag_str}")  # get the no of commits tracing to the tag
         repo.close()
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         teams_cloned.append(
