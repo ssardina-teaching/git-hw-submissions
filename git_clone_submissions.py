@@ -45,6 +45,7 @@ import os
 import sys
 import argparse
 import csv
+import time
 import traceback
 
 # local utilities
@@ -134,6 +135,7 @@ def clone_team_repos(list_repos, tag_str, output_folder):
         git_url = row[CSV_REPO_GIT]
         git_local_dir = os.path.join(output_folder, team_name)
 
+        time.sleep(2)
         if not os.path.exists(git_local_dir):  # if there is NOT already a local repo for the team - clone from scratch!
             logging.info(f'Trying to clone NEW team repo from URL {git_url}.')
             try:
@@ -291,7 +293,7 @@ if __name__ == "__main__":
     )
     # we could also use vars(parser.parse_args()) to make args a dictionary args['<option>']
     args = parser.parse_args()
-    print(f"Runing the script on: {util.get_time_now()}", flush=True)
+    print(f"Running the script on: {util.get_time_now()}", flush=True)
 
     # Set format and level of logging
     coloredlogs.install(level="DEBUG" if args.debug else LOGGING_LEVEL, fmt=LOGGING_FMT)
