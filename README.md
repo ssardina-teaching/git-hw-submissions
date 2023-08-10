@@ -96,7 +96,7 @@ For example, to clone Project 0 at commit with tag "`submission`" using the data
 $ python ../git-hw-submissions.git/git_clone_submissions.py --file-timestamps p0/cosc1127_timestamps.csv p0-repos.csv submission p0/ &| tee p0/clone-p0.txt
 ```
 
-All repos will be cloned within folder `p0/` and the file `p0/cosc1127_timestamps.csv` will contain the timestamps and commits of each repo cloned successfully. 
+All repos will be cloned within folder `p0/` and the file `p0/cosc1127_timestamps.csv` will contain the timestamps and commits of each repo cloned successfully. The file will contain the date of the commit linked to the tag and, if the tag is an annotated tag (and not just lightweight tag), it will also include the date tagged (otherwise they will be assumed the same). See annotated vs lightweight tags [here](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
 
 To just clone the last commit in the master branch, use `master` as the tag. 
 
