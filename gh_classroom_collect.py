@@ -86,6 +86,12 @@ if __name__ == "__main__":
     parser.add_argument("-u", "--user", help="GitHub username.")
     parser.add_argument(
         "-t",
+        "--token",
+        default=os.environ["GHTOKEN"] if os.environ["GHTOKEN"] is not None else None,
+        help="File containing GitHub authorization token/password. Defaults to GHTOKEN env variable.",
+    )
+    parser.add_argument(
+        "-tf",
         "--token-file",
         help="File containing GitHub authorization token/password.",
     )
@@ -98,20 +104,23 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     print(args)
-    print(f"Runing the script on: {get_time_now()}", flush=True)
+    print(f"Running the script on: {get_time_now()}", flush=True)
 
     REPO_URL_PATTERN = re.compile(
         r"^{}/{}-(.*)$".format(args.ORG_NAME, args.ASSIGNMENT_PREFIX)
     )
 
-    if not args.token_file and not (args.user or args.password):
+    if not args.token_file and not args.token and not (args.user or args.password):
         logging.error("No authentication provided, quitting....")
         exit(1)
     try:
         g = util.open_gitHub(
-            user=args.user, token_file=args.token_file, password=args.password
+            token=args.token,
+            token_file=args.token_file,
+            user=args.user,
+            password=args.password,
         )
-    except:
+    except Exception:
         logging.error(
             "Something wrong happened during GitHub authentication. Check credentials."
         )

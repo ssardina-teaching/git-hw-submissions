@@ -1,18 +1,20 @@
 import csv
-from github import Github, Repository, Organization, GithubException
+from github import Github, Repository, Organization, GithubException, Auth
 
 import git
 
 
 import datetime
 import pytz
-DATE_FORMAT = '%-d/%-m/%Y %-H:%-M:%-S'  # RMIT Uni (Australia)
-DATE_FORMAT = '%d/%m/%Y %H:%M:%S' 
-TIMEZONE = pytz.timezone('Australia/Melbourne')
+
+DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
+DATE_FORMAT = "%d/%m/%Y %H:%M:%S"
+TIMEZONE = pytz.timezone("Australia/Melbourne")
 
 
-CSV_REPO_GIT = 'REPO_URL'
-CSV_REPO_ID = 'REPO_ID'
+CSV_REPO_GIT = "REPO_URL"
+CSV_REPO_ID = "REPO_ID"
+
 
 def get_repos_from_csv(csv_file, team_ids=None):
     """
@@ -24,8 +26,8 @@ def get_repos_from_csv(csv_file, team_ids=None):
     """
 
     # Get the list of ALL teams with their GIT URL from the CSV file
-    with open(csv_file, 'r') as f:
-        teams_reader = csv.DictReader(f, delimiter=',')
+    with open(csv_file, "r") as f:
+        teams_reader = csv.DictReader(f, delimiter=",")
         teams = list(teams_reader)
 
     # If specific team ids given, just keep those them only
@@ -35,8 +37,11 @@ def get_repos_from_csv(csv_file, team_ids=None):
     return teams
 
 
-def open_gitHub(user=None, token_file=None, password=None):
+def open_gitHub(token_file=None, token=None, user=None, password=None):
     # Authenticate to GitHub
+    if token:
+        auth = Auth.Token(token)
+        g = Github(auth=auth)
     if token_file:
         with open(token_file) as fh:
             token = fh.read().strip()
@@ -46,8 +51,7 @@ def open_gitHub(user=None, token_file=None, password=None):
     return g
 
 
-
-def get_tag_info(repo:git.Repo, tag_str="head"):
+def get_tag_info(repo: git.Repo, tag_str="head"):
     """
     Returns the information of a tag in a repo. By default the head
 
@@ -57,7 +61,9 @@ def get_tag_info(repo:git.Repo, tag_str="head"):
     """
     if tag_str == "head":
         commit = repo.commit()
-        commit_time = datetime.datetime.fromtimestamp(commit.committed_date, tz=TIMEZONE)
+        commit_time = datetime.datetime.fromtimestamp(
+            commit.committed_date, tz=TIMEZONE
+        )
         tagged_time = commit_time
     else:
         tag = next((tag for tag in repo.tags if tag.name == tag_str), None)
@@ -66,9 +72,13 @@ def get_tag_info(repo:git.Repo, tag_str="head"):
             return None, None, None
         commit = tag.commit
 
-        commit_time = datetime.datetime.fromtimestamp(commit.committed_date, tz=TIMEZONE)
+        commit_time = datetime.datetime.fromtimestamp(
+            commit.committed_date, tz=TIMEZONE
+        )
         try:
-            tagged_time = datetime.datetime.fromtimestamp(tag.object.tagged_date, tz=TIMEZONE)  # if it is an annotated tag
+            tagged_time = datetime.datetime.fromtimestamp(
+                tag.object.tagged_date, tz=TIMEZONE
+            )  # if it is an annotated tag
         except:
             tagged_time = commit_time  # if it is a lightweight tag (no date stored; https://git-scm.com/book/en/v2/Git-Basics-Tagging)
         # logging.error("\t Repo {} does not have tag {}".format(repo, tag_str))
@@ -79,5 +89,3 @@ def get_tag_info(repo:git.Repo, tag_str="head"):
 
 def get_time_now():
     return datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
-
-
