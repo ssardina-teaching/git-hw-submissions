@@ -8,6 +8,7 @@ These are some useful scripts that I use in teaching:
 * `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
 * `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHub repositories. This can be used to do analysis of student contributions
 * `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
+* `gh_member_bulk_team.py`: add/delete GH username to a list of teams in an organization (e.g., to add tutors to groups so they can see student repos).
 * `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
 
 Other scripts (under [`other-scripts/`](other-scripts/) folder):
@@ -15,7 +16,7 @@ Other scripts (under [`other-scripts/`](other-scripts/) folder):
 * `gh_scrape_scrape.py`: Scrape GitHub for repo info via searches.
 * `gh_clone_repos.py`: Clones set of GitHub repo.
 
-All this scripts were tested under Python 3.6+
+All these scripts were tested under Python 3.6+
 
 To install all requirements:
 
@@ -29,6 +30,7 @@ $ sudo pip install -r requirements.txt
   - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
   - [`gh_authors_collect.py`: extract author commit stats](#gh_authors_collectpy-extract-author-commit-stats)
   - [`gh_create_wiki.py`: push Wiki template to list of repos](#gh_create_wikipy-push-wiki-template-to-list-of-repos)
+  - [`gh_member_bulk_team.py`: add/delete GH username to GH teams](#gh_member_bulk_teampy-adddelete-gh-username-to-gh-teams)
   - [Some useful commands](#some-useful-commands)
   - [`git_batch_commit.sh`: a shell script template to make changes to a collection of repos.](#git_batch_commitsh-a-shell-script-template-to-make-changes-to-a-collection-of-repos)
   - [Links](#links)
@@ -126,6 +128,34 @@ Example:
 ```bash
 $ python3 gh_create_wiki.py ../ai20-contest-repos.csv ~/AI20/assessments/project-contest/updated-src/wiki-template/
 ```
+
+## `gh_member_bulk_team.py`: add/delete GH username to GH teams
+
+For example, to add Axel to all the teams except teachers:
+
+```shell
+$ python gh_member_bulk_team.py RMIT-COSC2780-2973-IDM24  axelahmer  --nteams  "teachers" "headtutor"
+Running the script on: 2024-05-18-00-35-27
+Sat, 18 May 2024 00:35:27 INFO     Getting organization RMIT-COSC2780-2973-IDM24...
+Sat, 18 May 2024 00:35:27 INFO     Getting GH user for axelahmer...
+Teams available: ['AI NPCs', 'ASP Dads', 'Galacticos', 'gASP', 'Harry Ron and Hermoine', 'IDM Project', 'Intellect Realm', 'Inter-Dimensional Masochists (IDM)', 'Logic Nexus', 'Lorem Ipsum', 'Mister World Wide', 'Prolog nightmares again', 'sajeevan', 'Super awesome team name', 'teachers', 'TRY']
+Adding user **axelahmer** to team AI NPCs
+Adding user **axelahmer** to team ASP Dads
+Adding user **axelahmer** to team Galacticos
+Adding user **axelahmer** to team gASP
+Adding user **axelahmer** to team Harry Ron and Hermoine
+Adding user **axelahmer** to team IDM Project
+Adding user **axelahmer** to team Intellect Realm
+Adding user **axelahmer** to team Inter-Dimensional Masochists (IDM)
+Adding user **axelahmer** to team Logic Nexus
+Adding user **axelahmer** to team Lorem Ipsum
+Adding user **axelahmer** to team Mister World Wide
+Adding user **axelahmer** to team Prolog nightmares again
+Adding user **axelahmer** to team sajeevan
+Adding user **axelahmer** to team Super awesome team name
+Adding user **axelahmer** to team TRY
+```
+
 
 ## Some useful commands
 
