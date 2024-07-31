@@ -10,7 +10,7 @@ Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 """
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2019-2022"
+__copyright__ = "Copyright 2019-2024"
 
 import base64
 import csv
@@ -18,9 +18,11 @@ import re
 import traceback
 
 from argparse import ArgumentParser
-from github import Github, Repository, Organization, GithubException
+from github import GithubException
 import logging
 import util
+import time
+
 
 CSV_GITHUB_USERNAME = "github_username"
 CSV_GITHUB_IDENTIFIER = "identifier"
@@ -72,8 +74,6 @@ def print_repo_info(repo):
     except:
         pass
 
-
-import time
 
 if __name__ == "__main__":
     parser = ArgumentParser(
