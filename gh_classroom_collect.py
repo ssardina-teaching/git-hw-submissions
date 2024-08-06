@@ -21,6 +21,7 @@ from argparse import ArgumentParser
 from github import GithubException
 import logging
 import util
+import os
 import time
 
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t",
         "--token",
-        default=os.environ["GHTOKEN"] if os.environ["GHTOKEN"] is not None else None,
+        default=os.environ.get("GHTOKEN"),
         help="File containing GitHub authorization token/password. Defaults to GHTOKEN env variable.",
     )
     parser.add_argument(
