@@ -184,7 +184,9 @@ if __name__ == "__main__":
             )
 
             # create a new comment with the final marking/feedback table results
-            comment = pr_feedback.create_comment(comments[repo_id])
+            comment = pr_feedback.create_comment(
+                f"Dear @{repo_id}: find here the feedback and resuls for the project. \n\n {comments[repo_id]}"
+            )
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
