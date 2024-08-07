@@ -51,42 +51,51 @@ GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "errors_pr.csv"
 
-def make_template(mapping):
-    return f"""===================================================================
-STUDENT NUMBER:                          {mapping['STUDENT NO']}
-STUDENT FULL NAME:                       {mapping['Preferred Name']}
-GITHUB USER:                             {mapping['GHU']}
-GIT REPO:                                {mapping['URL-REPO']}
-Timestamp submission:                    {mapping['TIMESTAMP']}
-COMMIT MARKED:                           {mapping['COMMIT']}
-NO OF COMMITS:                           {mapping['NOCOM']}
-COMMIT RATIO (<1 is bad)                 {mapping['RATIO']}
-Days late (if any):                      {mapping['DYS LATE']}
-CERTIFIED (no certification = 0 marks)?  {mapping['CERTIFICATION']}
+def make_template(project, mapping):
+    if project == "p0":
+        return p0_template(mapping)
+
+def p0_template(mapping):
+    return f"""Project 0 results
+===========
+
+|                                          |                             |
+|:-----------------------------------------|----------------------------:|
+|**Student number:**                         | {mapping['STUDENT NO']} |
+|**Student full name:**                      | {mapping['Preferred Name']} |
+|**Github user:**                            | {mapping['GHU']} |
+|**Git repo:**                               | {mapping['URL-REPO']} |
+|**Timestamp submission:**                   | {mapping['TIMESTAMP']} |
+|**Commit marked:**                          | {mapping['COMMIT']} |
+|**No of commits:**                          | {mapping['NOCOM']} |
+|**Commit ratio (<1 is bad)**                | {mapping['RATIO']} |
+|**Days late (if any):**                     | {mapping['DYS LATE']} |
+|**Certified (no certification = 0 marks)?** | {mapping['CERTIFICATION']} |
     
-===================================================================
-RAW POINTS   
-Q1:                                 {mapping['Q1-TOT']}
-Q2:                                 {mapping['Q2-TOT']}
-Q3:                                 {mapping['Q3-TOT']}
+## Raw points
+|                                       |                     |
+|:--------------------------------------|--------------------:|
+|**Q1:**                                | {mapping['Q1-TOT']} |
+|**Q2:**                                | {mapping['Q2-TOT']} |
+|**Q3:**                                | {mapping['Q3-TOT']} |
     
-===================================================================
-SOFTWARE ENGINEERING PENALTIES
-MERGED FEEDBACK PR:                 {mapping['PR-MERG']}
-COMMITS WITH INVALID USERNAME:      {mapping['BAD-USR']}
-COMMIT QUALITY:                     {mapping['SEPROB?']}
+## Software engineering penalties
+|                                       |                     |
+|:--------------------------------------|--------------------:|
+|**Merged feedback pr:**               | {mapping['PR-MERG']} |
+|**Commits with invalid username:**    | {mapping['BAD-USR']} |
+|**Commit quality:**                   | {mapping['SEPROB?']} |
     
-===================================================================
-SUMMARY OF RESULTS   
-RAW POINTS COLLECTED (out of 3):   {mapping['POINTS']}
-SE WEIGHT ADJ (1 if none):         {mapping['WEIGHT']}
-    
-===================================================================
-LATE PENALTY % (if any):           {mapping['LATE PEN']}
-FINAL MARKS (out of 100%):         {mapping['MARKS']}
-GRADE:                             {mapping['GRADE']}
-MARKING REPORT:                    See next comment
-NOTES (if any)                     {mapping['NOTE']}
+## Summary of results
+|                                       |                     |
+|:--------------------------------------|--------------------:|
+|**Raw points collected (out of 3):**  | {mapping['POINTS']} |
+|**Se weight adj (1 if none):**        | {mapping['WEIGHT']} |
+|**Late penalty % (if any):**          | {mapping['LATE PEN']} |
+|**Final marks (out of 100%):**        | {mapping['MARKS']} |
+|**Grade:**                            | {mapping['GRADE']} |
+|**Marking report:**                   | See next comment |
+|**Notes (if any)**                    | {mapping['NOTE']} |
 """
 
 def load_comment_dictionary(file_path: str) -> dict:
@@ -97,7 +106,7 @@ def load_comment_dictionary(file_path: str) -> dict:
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            comment_dict[row["GHU"]] = make_template(row)
+            comment_dict[row["GHU"]] = make_template("p0",row)
     return comment_dict
 
 
@@ -161,10 +170,10 @@ if __name__ == "__main__":
         repo = g.get_repo(repo_name)
         try:
             pr_feedback = repo.get_issue(number=1)  # get the first PR - feedback
-            #comment = pr_feedback.create_comment(comments[repo_id])
+            comment = pr_feedback.create_comment(comments[repo_id])
             with open(os.path.join(args.REPORT_FOLDER,f"{repo_id}.txt"),"r") as report:
                 report_text = report.read()
-            comment = pr_feedback.create_comment(report_text)
+            #comment = pr_feedback.create_comment(report_text)
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
