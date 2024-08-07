@@ -49,7 +49,7 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
 
-CSV_MERGED = "merged_pr.csv"
+CSV_ERRORS = "errors_pr.csv"
 
 def make_template(mapping):
     return f"""===================================================================
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     no_repos = len(list_repos)
     no_merged = 0
     no_errors = 0
-    merged_pr = []
+    errors = []
     for k, r in enumerate(list_repos):
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
@@ -161,14 +161,30 @@ if __name__ == "__main__":
         repo = g.get_repo(repo_name)
         try:
             pr_feedback = repo.get_issue(number=1)  # get the first PR - feedback
-            comment = pr_feedback.create_comment(comments[repo_id])
+            #comment = pr_feedback.create_comment(comments[repo_id])
             with open(os.path.join(args.REPORT_FOLDER,f"{repo_id}.txt"),"r") as report:
                 report_text = report.read()
             comment = pr_feedback.create_comment(report_text)
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
+            errors.append(repo_id)
+        except KeyError as e:
+            logging.error(f"\t Error in repo {repo_name}: {repo_id} not found in {args.MARKING_CSV}.")
+            no_errors += 1
+            errors.append(repo_id)
+        except FileNotFoundError as e:
+            logging.error(f"\t Error in repo {repo_name}: report file {repo_id}.txt not found in {args.REPORT_FOLDER}.")
+            no_errors += 1
+            errors.append(repo_id)
+
 
     logging.info(
         f"Finished! Total repos: {no_repos} - Errors: {no_errors}."
     )
+
+    with open(CSV_ERRORS, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows([[repo_id] for repo_id in errors])
+
+    logging.info(f"Repos with errors written to {CSV_ERRORS}.")
