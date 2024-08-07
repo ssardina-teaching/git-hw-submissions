@@ -51,6 +51,23 @@ GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "errors_pr.csv"
 
+FEEDBACK_MESSAGE_P0 = """
+
+-------------------------
+Your code has been automarked for technical correctness and your grades are now preliminary registered!
+
+Please note the following:
+
+- We will be running code similarity checks, as well as inspecting reports and code manually, in an ongoing basis for all the projects. We reserve the right to adjust the marks or to have a demo meeting with you, if necessary.
+- The total points above is raw and does not reflect the weighting of each question (as per spec.).
+
+Thanks for your submission & hope you enjoyed and learnt from this "dry-run" project!
+
+Sebastian & Andrew
+"""
+
+FEEDBACK_MESSAGE = FEEDBACK_MESSAGE_P0
+
 
 def make_template(project, mapping):
     if project == "p0":
@@ -70,9 +87,11 @@ def p0_template(mapping):
 |**Timestamp submission:**                   | {mapping['TIMESTAMP']} |
 |**Commit marked:**                          | {mapping['COMMIT']} |
 |**No of commits:**                          | {mapping['SE-NOCOM']} |
-|**Commit ratio (<1 is bad)**                | {mapping['SE-RATIO']} |
+|**Commit ratio (<1 signal problems)**       | {mapping['SE-RATIO']} |
 |**Days late (if any):**                     | {mapping['DYS LATE']} |
-|**Certified (no certification = 0 marks)?** | {mapping['CERTIFICATION']} |
+|**Certified?**                              | {mapping['CERTIFICATION']} |
+
+**NOTE:** Commit ratio is calculated pro-rata to the points achieved.
     
 ## Raw points
 |                                       |                     |
@@ -93,11 +112,14 @@ def p0_template(mapping):
 |:------------------------------------------|----------------------:|
 |**Raw points collected (out of 3):**       | {mapping['POINTS']}   |
 |**Total weight adjustment (1 if none):**   | {mapping['WEIGHT']}   |
-|**Late penalty % (if any):**               | {mapping['LATE PEN']} |
-|**Final marks (out of 100%):**             | {mapping['MARKS']}    |
+|**Late penalty (10/day, if any):**         | {mapping['LATE PEN']} |
+|**Final marks (out of 100):**              | {mapping['MARKS']}    |
 |**Grade:**                                 | {mapping['GRADE']}    |
 |**Marking report:**                        | See comment before    |
 |**Notes (if any)**                         | {mapping['NOTE']}     |
+
+
+Final marks = ((Raw points)*(Total Weight))*100 - (Late Penalty)
 """
 
 
@@ -184,16 +206,16 @@ if __name__ == "__main__":
 
             # get the marking data for the student/repo
             marking_repo = marking_dict[repo_id]
-            if marking_repo["COMMIT"] is None:
+            if not marking_repo["COMMIT"]:
                 logging.warning(f"\t Repo {repo_name} has no tag submission.")
                 comment = pr_feedback.create_comment(
-                    f"Dear @{repo_id}: no submission tag found; no marking as per spec."
+                    f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
                 )
                 continue
             elif marking_repo["CERTIFICATION"] != "Yes":
                 logging.warning(f"\t Repo {repo_name} has no certification.")
                 comment = pr_feedback.create_comment(
-                    f"Dear @{repo_id}: no certification; no marking as per spec."
+                    f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
                 )
                 continue
 
@@ -204,7 +226,7 @@ if __name__ == "__main__":
             ) as report:
                 report_text = report.read()
             comment = pr_feedback.create_comment(
-                f"# Full autograder report \n\n ```{report_text}```"
+                f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"
             )
 
             # create a new comment with the final marking/feedback table results
