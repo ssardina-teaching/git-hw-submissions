@@ -16,25 +16,26 @@ CSV_REPO_GIT = "REPO_URL"
 CSV_REPO_ID = "REPO_ID"
 
 
-def get_repos_from_csv(csv_file, team_ids=None):
+def get_repos_from_csv(csv_file, repos_ids=None):
     """
     Collect list of teams with their git URL links from a csv file
 
     :param csv_file: file where csv data is with two fields TEAM and GIT
-    :param team_ids: list of specific names or None
-    :return: a list of teams, each team is a dictionary with info (name, url, etc)
+    :param repos_ids: list of specific repo names or None
+    :return: a list of dictionaries for each repo (name, url, etc)
+            e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'ASSIGNMENT': 'p0-warmup', 'REPO_ID': 'msardina', 'REPO_NAME': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
     """
 
     # Get the list of ALL teams with their GIT URL from the CSV file
     with open(csv_file, "r") as f:
         teams_reader = csv.DictReader(f, delimiter=",")
-        teams = list(teams_reader)
+        repos = list(teams_reader)
 
     # If specific team ids given, just keep those them only
-    if team_ids is not None:
-        teams = [t for t in teams if t[CSV_REPO_ID] in team_ids]
+    if repos_ids is not None:
+        repos = [t for t in repos if t[CSV_REPO_ID] in repos_ids]
 
-    return teams
+    return repos
 
 
 def open_gitHub(token_file=None, token=None, user=None, password=None):

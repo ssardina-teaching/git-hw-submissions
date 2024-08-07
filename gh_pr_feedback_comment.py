@@ -69,8 +69,8 @@ def p0_template(mapping):
 |**Git repo:**                               | {mapping['URL-REPO']} |
 |**Timestamp submission:**                   | {mapping['TIMESTAMP']} |
 |**Commit marked:**                          | {mapping['COMMIT']} |
-|**No of commits:**                          | {mapping['NOCOM']} |
-|**Commit ratio (<1 is bad)**                | {mapping['RATIO']} |
+|**No of commits:**                          | {mapping['SE-NOCOM']} |
+|**Commit ratio (<1 is bad)**                | {mapping['SE-RATIO']} |
 |**Days late (if any):**                     | {mapping['DYS LATE']} |
 |**Certified (no certification = 0 marks)?** | {mapping['CERTIFICATION']} |
     
@@ -81,35 +81,35 @@ def p0_template(mapping):
 |**Q2:**                                | {mapping['Q2-TOT']} |
 |**Q3:**                                | {mapping['Q3-TOT']} |
     
-## Software Engineering (SE) (discount) weights
-|                                       |                     |
-|:--------------------------------------|--------------------:|
-|**Merged feedback PR:**               | {mapping['PR-MERG']} |
-|**Commits with invalid username:**    | {mapping['BAD-USR']} |
-|**Commit quality:**                   | {mapping['SEPROB?']} |
+## Software Engineering (SE) (discount) weights (if any)
+|                                       |                      |
+|:--------------------------------------|---------------------:|
+|**Merged feedback PR:**                | {mapping['SE-PRMER']} |
+|**Commits with invalid username:**     | {mapping['SE-GHUSR']} |
+|**Commit quality:**                    | {mapping['SE-LOWRAT']} |
     
 ## Summary of results
-|                                       |                     |
-|:--------------------------------------|--------------------:|
-|**Raw points collected (out of 3):**  | {mapping['POINTS']} |
-|**SE weight adjustment (1 if none):** | {mapping['WEIGHT']} |
-|**Late penalty % (if any):**          | {mapping['LATE PEN']} |
-|**Final marks (out of 100%):**        | {mapping['MARKS']} |
-|**Grade:**                            | {mapping['GRADE']} |
-|**Marking report:**                   | See comment before |
-|**Notes (if any)**                    | {mapping['NOTE']} |
+|                                           |                       |
+|:------------------------------------------|----------------------:|
+|**Raw points collected (out of 3):**       | {mapping['POINTS']}   |
+|**Total weight adjustment (1 if none):**   | {mapping['WEIGHT']}   |
+|**Late penalty % (if any):**               | {mapping['LATE PEN']} |
+|**Final marks (out of 100%):**             | {mapping['MARKS']}    |
+|**Grade:**                                 | {mapping['GRADE']}    |
+|**Marking report:**                        | See comment before    |
+|**Notes (if any)**                         | {mapping['NOTE']}     |
 """
 
 
-def load_comment_dictionary(file_path: str) -> dict:
+def load_marking_dict(file_path: str) -> dict:
     """
-    Load the comment dictionary from a CSV file
+    Load the marking dictionary from a CSV file; keys are GH username
     """
     comment_dict = {}
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            comment_dict[row["GHU"]] = make_template("p0", row)
+            comment_dict[row["GHU"]] = row
     return comment_dict
 
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         )
         exit(0)
 
-    comments = load_comment_dictionary(args.MARKING_CSV)
+    marking_dict = load_marking_dict(args.MARKING_CSV)
 
     ###############################################
     # Authenticate to GitHub
@@ -170,31 +170,50 @@ if __name__ == "__main__":
         repo_url = f"https://github.com/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 
+        if repo_id not in marking_dict:
+            logging.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
+            no_errors += 1
+            errors.append(repo_id)
+            continue
+
         repo = g.get_repo(repo_name)
         try:
-            pr_feedback = repo.get_issue(number=1)  # get the first PR - feedback
+            # get the first PR - feedback
+            #   see we cannot use .get_pull(1) bc it involves reviewing the PRs!
+            pr_feedback = repo.get_issue(number=1)
 
+            # get the marking data for the student/repo
+            marking_repo = marking_dict[repo_id]
+            if marking_repo["COMMIT"] is None:
+                logging.warning(f"\t Repo {repo_name} has no tag submission.")
+                comment = pr_feedback.create_comment(
+                    f"Dear @{repo_id}: no submission tag found; no marking as per spec."
+                )
+                continue
+            elif marking_repo["CERTIFICATION"] != "Yes":
+                logging.warning(f"\t Repo {repo_name} has no certification.")
+                comment = pr_feedback.create_comment(
+                    f"Dear @{repo_id}: no certification; no marking as per spec."
+                )
+                continue
+
+            # Now there is a proper submission; issue the autograder report & feedback summary
             # create a new comment with the automarker report
             with open(
                 os.path.join(args.REPORT_FOLDER, f"{repo_id}.txt"), "r"
             ) as report:
                 report_text = report.read()
             comment = pr_feedback.create_comment(
-                f"# Full autograder report \n\n {report_text}"
+                f"# Full autograder report \n\n ```{report_text}```"
             )
 
             # create a new comment with the final marking/feedback table results
+            feedback_text = make_template("p0", marking_repo)
             comment = pr_feedback.create_comment(
-                f"Dear @{repo_id}: find here the feedback and resuls for the project. \n\n {comments[repo_id]}"
+                f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
             )
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
-            no_errors += 1
-            errors.append(repo_id)
-        except KeyError as e:
-            logging.error(
-                f"\t Error in repo {repo_name}: {repo_id} not found in {args.MARKING_CSV}."
-            )
             no_errors += 1
             errors.append(repo_id)
         except FileNotFoundError as e:
