@@ -51,9 +51,11 @@ GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "errors_pr.csv"
 
+
 def make_template(project, mapping):
     if project == "p0":
         return p0_template(mapping)
+
 
 def p0_template(mapping):
     return f"""Project 0 results
@@ -98,6 +100,7 @@ def p0_template(mapping):
 |**Notes (if any)**                    | {mapping['NOTE']} |
 """
 
+
 def load_comment_dictionary(file_path: str) -> dict:
     """
     Load the comment dictionary from a CSV file
@@ -106,7 +109,7 @@ def load_comment_dictionary(file_path: str) -> dict:
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            comment_dict[row["GHU"]] = make_template("p0",row)
+            comment_dict[row["GHU"]] = make_template("p0", row)
     return comment_dict
 
 
@@ -142,8 +145,8 @@ if __name__ == "__main__":
     ###############################################
     # Authenticate to GitHub
     ###############################################
-    if not args.token_file and not (args.user or args.password):
-        logging.error("No authentication provided, quitting....")
+    if not args.token_file:
+        logging.error("No token file for authentication provided, quitting....")
         exit(1)
     try:
         g = util.open_gitHub(token_file=args.token_file)
@@ -171,26 +174,29 @@ if __name__ == "__main__":
         try:
             pr_feedback = repo.get_issue(number=1)  # get the first PR - feedback
             comment = pr_feedback.create_comment(comments[repo_id])
-            with open(os.path.join(args.REPORT_FOLDER,f"{repo_id}.txt"),"r") as report:
+            with open(
+                os.path.join(args.REPORT_FOLDER, f"{repo_id}.txt"), "r"
+            ) as report:
                 report_text = report.read()
-            #comment = pr_feedback.create_comment(report_text)
+            # comment = pr_feedback.create_comment(report_text)
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
             errors.append(repo_id)
         except KeyError as e:
-            logging.error(f"\t Error in repo {repo_name}: {repo_id} not found in {args.MARKING_CSV}.")
+            logging.error(
+                f"\t Error in repo {repo_name}: {repo_id} not found in {args.MARKING_CSV}."
+            )
             no_errors += 1
             errors.append(repo_id)
         except FileNotFoundError as e:
-            logging.error(f"\t Error in repo {repo_name}: report file {repo_id}.txt not found in {args.REPORT_FOLDER}.")
+            logging.error(
+                f"\t Error in repo {repo_name}: report file {repo_id}.txt not found in {args.REPORT_FOLDER}."
+            )
             no_errors += 1
             errors.append(repo_id)
 
-
-    logging.info(
-        f"Finished! Total repos: {no_repos} - Errors: {no_errors}."
-    )
+    logging.info(f"Finished! Total repos: {no_repos} - Errors: {no_errors}.")
 
     with open(CSV_ERRORS, "w", newline="") as file:
         writer = csv.writer(file)
