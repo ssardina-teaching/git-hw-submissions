@@ -81,10 +81,10 @@ def p0_template(mapping):
 |**Q2:**                                | {mapping['Q2-TOT']} |
 |**Q3:**                                | {mapping['Q3-TOT']} |
     
-## Software engineering penalties
+## Software Engineering (SE) (discount) weights
 |                                       |                     |
 |:--------------------------------------|--------------------:|
-|**Merged feedback pr:**               | {mapping['PR-MERG']} |
+|**Merged feedback PR:**               | {mapping['PR-MERG']} |
 |**Commits with invalid username:**    | {mapping['BAD-USR']} |
 |**Commit quality:**                   | {mapping['SEPROB?']} |
     
@@ -92,11 +92,11 @@ def p0_template(mapping):
 |                                       |                     |
 |:--------------------------------------|--------------------:|
 |**Raw points collected (out of 3):**  | {mapping['POINTS']} |
-|**Se weight adj (1 if none):**        | {mapping['WEIGHT']} |
+|**SE weight adjustment (1 if none):** | {mapping['WEIGHT']} |
 |**Late penalty % (if any):**          | {mapping['LATE PEN']} |
 |**Final marks (out of 100%):**        | {mapping['MARKS']} |
 |**Grade:**                            | {mapping['GRADE']} |
-|**Marking report:**                   | See next comment |
+|**Marking report:**                   | See comment before |
 |**Notes (if any)**                    | {mapping['NOTE']} |
 """
 
@@ -173,12 +173,18 @@ if __name__ == "__main__":
         repo = g.get_repo(repo_name)
         try:
             pr_feedback = repo.get_issue(number=1)  # get the first PR - feedback
-            comment = pr_feedback.create_comment(comments[repo_id])
+
+            # create a new comment with the automarker report
             with open(
                 os.path.join(args.REPORT_FOLDER, f"{repo_id}.txt"), "r"
             ) as report:
                 report_text = report.read()
-            # comment = pr_feedback.create_comment(report_text)
+            comment = pr_feedback.create_comment(
+                f"# Full autograder report \n\n {report_text}"
+            )
+
+            # create a new comment with the final marking/feedback table results
+            comment = pr_feedback.create_comment(comments[repo_id])
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
