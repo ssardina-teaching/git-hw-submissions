@@ -1,5 +1,5 @@
 """
-Check which repos have wrongly merged PR #1 for Feedback from GitHub Classroom
+Issue marking comments to the Feedback PR of a student repo
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
@@ -9,32 +9,25 @@ PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.h
 Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in-python
 """
 
-__author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
+__author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
-import base64
 import csv
-import re
-import traceback
 import os
-
 from argparse import ArgumentParser
-import util
 from typing import List
+from datetime import datetime
+from zoneinfo import ZoneInfo  # this should work Python 3.9+
+from github import GithubException
 
-# https://pygithub.readthedocs.io/en/latest/introduction.html
-from github import Github, Repository, Organization, GithubException
+import util
+
 
 import logging
 import coloredlogs
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
 TIMEZONE_STR = "Australia/Melbourne"
-from datetime import datetime
-
-# this should work Python 3.9+
-from zoneinfo import ZoneInfo
-
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 
 
@@ -118,8 +111,9 @@ def p0_template(mapping):
 |**Marking report:**                        | See comment before    |
 |**Notes (if any)**                         | {mapping['NOTE']}     |
 
+The final marks (out of 100) is calculated as follows:
 
-Final marks = ((Raw points)*(Total Weight))*100 - (Late Penalty)
+**FINAL MARKS** = ((RAW POINTS / TOTAL POINTS)*WEIGHT)*100 - LATE PENALTY
 """
 
 
@@ -131,7 +125,7 @@ def load_marking_dict(file_path: str) -> dict:
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            comment_dict[row["GHU"]] = row
+            comment_dict[row["GHU"].lower()] = row
     return comment_dict
 
 
@@ -148,13 +142,23 @@ if __name__ == "__main__":
         "--token-file",
         help="File containing GitHub authorization token/password.",
     )
+    parser.add_argument(
+        "--start", "-s", type=int, help="repo no to start processing from."
+    )
+    parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
     logging.info(f"Starting on {TIMEZONE}: {now}\n")
 
-    # Get the list of TEAM + GIT REPO links from csv file
+    # Get the list of relevant repos from the CSV file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
+    if args.repos is None:
+        start_no = args.start if args.start is not None else 0
+        end_no = (args.end if args.end is not None else len(list_repos)) + 1
+        list_repos = list_repos[start_no:end_no]
+
+    logging.info(args)
 
     if len(list_repos) == 0:
         logging.error(
@@ -187,10 +191,11 @@ if __name__ == "__main__":
     no_errors = 0
     errors = []
     for k, r in enumerate(list_repos):
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID"].lower()
         repo_name = r["REPO_NAME"]
-        repo_url = f"https://github.com/{repo_name}"
-        logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
+        # repo_url = f"https://github.com/{repo_name}"
+        repo_url = r["REPO_HTTP"]
+        logging.info(f"Processing repo {k+1}/{no_repos}: {repo_id} ({repo_url})...")
 
         if repo_id not in marking_dict:
             logging.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
@@ -221,9 +226,10 @@ if __name__ == "__main__":
 
             # Now there is a proper submission; issue the autograder report & feedback summary
             # create a new comment with the automarker report
-            with open(
-                os.path.join(args.REPORT_FOLDER, f"{repo_id}.txt"), "r"
-            ) as report:
+            file_report = f"{repo_id}.txt"  # default report filename
+            if "REPORT" in marking_repo:
+                file_report = marking_repo["REPORT"]
+            with open(os.path.join(args.REPORT_FOLDER, file_report), "r") as report:
                 report_text = report.read()
             comment = pr_feedback.create_comment(
                 f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"

@@ -39,8 +39,6 @@ def get_repos_from_csv(csv_file, repos_ids=None):
             for t in repos
             if t[CSV_REPO_ID].lower() in list(map(str.lower, repos_ids))
         ]
-
-    print(repos_ids, repos)
     return repos
 
 
