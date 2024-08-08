@@ -170,6 +170,7 @@ if __name__ == "__main__":
                     "REPO_SUFFIX": match.group(1),
                     "REPO_NAME": repo.full_name,
                     "REPO_URL": repo.ssh_url,
+                    "REPO_HTTP": repo.html_url,
                 }
             )
     print(f"Number of repos found with prefix *{args.ASSIGNMENT_PREFIX}*:", count)
@@ -179,7 +180,14 @@ if __name__ == "__main__":
     with open(args.CSV, "w") as output_csv_file:
         csv_writer = csv.DictWriter(
             output_csv_file,
-            fieldnames=["ORG_NAME", "ASSIGNMENT", "REPO_ID", "REPO_NAME", "REPO_URL"],
+            fieldnames=[
+                "ORG_NAME",
+                "ASSIGNMENT",
+                "REPO_ID",
+                "REPO_NAME",
+                "REPO_URL",
+                "REPO_HTTP",
+            ],
         )
         csv_writer.writeheader()
 
