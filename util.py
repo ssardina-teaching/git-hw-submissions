@@ -18,7 +18,8 @@ CSV_REPO_ID = "REPO_ID"
 
 def get_repos_from_csv(csv_file, repos_ids=None):
     """
-    Collect list of teams with their git URL links from a csv file
+    Collect list of teams with their git URL links from a CSV file.
+    Case insensitive search for the repo ids.
 
     :param csv_file: file where csv data is with two fields TEAM and GIT
     :param repos_ids: list of specific repo names or None
@@ -33,8 +34,13 @@ def get_repos_from_csv(csv_file, repos_ids=None):
 
     # If specific team ids given, just keep those them only
     if repos_ids is not None:
-        repos = [t for t in repos if t[CSV_REPO_ID] in repos_ids]
+        repos = [
+            t
+            for t in repos
+            if t[CSV_REPO_ID].lower() in list(map(str.lower, repos_ids))
+        ]
 
+    print(repos_ids, repos)
     return repos
 
 
