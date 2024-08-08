@@ -84,19 +84,16 @@ if __name__ == "__main__":
     parser.add_argument("ORG_NAME", help="Organization name for GitHub Classroom")
     parser.add_argument("ASSIGNMENT_PREFIX", help="Prefix string for the assignment.")
     parser.add_argument("CSV", help="CSV file where to store the set of repo links.")
-    parser.add_argument("-u", "--user", help="GitHub username.")
     parser.add_argument(
-        "-t",
         "--token",
         default=os.environ.get("GHTOKEN"),
         help="File containing GitHub authorization token/password. Defaults to GHTOKEN env variable.",
     )
     parser.add_argument(
-        "-tf",
+        "-t",
         "--token-file",
         help="File containing GitHub authorization token/password.",
     )
-    parser.add_argument("-p", "--password", help="GitHub username's password.")
     parser.add_argument(
         "-m",
         "--student-map",
@@ -111,17 +108,17 @@ if __name__ == "__main__":
         r"^{}/{}-(.*)$".format(args.ORG_NAME, args.ASSIGNMENT_PREFIX)
     )
 
-    if not args.token_file and not args.token and not (args.user or args.password):
-        logging.error("No authentication provided, quitting....")
+    ###############################################
+    # Authenticate to GitHub
+    ###############################################
+    if not args.token_file and not args.token:
+        logging.error(
+            "No token or token file for authentication provided, quitting...."
+        )
         exit(1)
     try:
-        g = util.open_gitHub(
-            token=args.token,
-            token_file=args.token_file,
-            user=args.user,
-            password=args.password,
-        )
-    except Exception:
+        g = util.open_gitHub(token=args.token, token_file=args.token_file)
+    except:
         logging.error(
             "Something wrong happened during GitHub authentication. Check credentials."
         )
