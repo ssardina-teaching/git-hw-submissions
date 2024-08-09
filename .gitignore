@@ -79,3 +79,5 @@ __*
 geckodriver.log
 google-api/token.json
 credentials.json
+storage.json
+token.json

@@ -11,6 +11,7 @@ These are some useful scripts that I use in teaching:
 * `gh_member_bulk_team.py`: add/delete GH username to a list of teams in an organization (e.g., to add tutors to groups so they can see student repos).
 * `gh_pr_feedback_check_merged.py`: check if a GH Classroom Feedback PRs have been (wrongly) merged in each repo.
 * `gh_pr_feedback_comment.py`: push feedback marking to repos' Feedback PRs.
+* `gg_get_worksheet.py`: dump a Google Sheet worksheet as CSV file (usually marking sheet).
 * `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
 
 
