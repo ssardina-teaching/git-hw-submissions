@@ -1,32 +1,22 @@
 """Get the worksheet of a Google Sheet
 
-Google API: https://developers.google.com/drive/api/guides/about-sdk
+This is done using GSHEETS package: https://gsheets.readthedocs.io/en/stable/index.html
 
-Python Client: 
-    https://github.com/googleapis/google-api-python-client
-    https://developers.google.com/resources/api-libraries/documentation/sheets/v4/python/latest/index.html
+    this package provides an easier access to the Google Sheet API:
 
-Google Sheet API: 
     https://developers.google.com/sheets/api/guides/concepts
-    
-    Set-up for Google Sheets: https://developers.google.com/sheets/api/quickstart/python
 
-    In the end you should get a credentials.json
 
-Google Google Workspace API: https://developers.google.com/drive/api/quickstart/python
+    Google API: https://developers.google.com/drive/api/guides/about-sdk
 
-    $ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+Example to download the MARKING sheet from the Google Sheet with ID 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs:
 
-Example:
-
-$ python gh_pr_feedback_comment.py repos.csv marking-p0.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback_remark.log
+$ python git-hw-submissions.git/gg_get_worksheet.py 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs MARKING -c ../git-hw-submissions.git/credentials.json -o marking.csv
 """
 
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
-import csv
-import os
 from argparse import ArgumentParser
 from datetime import datetime
 from zoneinfo import ZoneInfo  # this should work Python 3.9+
