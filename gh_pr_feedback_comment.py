@@ -7,6 +7,10 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
 PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
 Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in-python
+
+Example:
+
+$ python gh_pr_feedback_comment.py repos.csv marking-p0.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback_remark.log
 """
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
