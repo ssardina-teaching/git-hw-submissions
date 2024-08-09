@@ -133,6 +133,13 @@ def load_marking_dict(file_path: str) -> dict:
     return comment_dict
 
 
+def issue_feedback_comment(pull, message, dry_run=False):
+    if dry_run:
+        print(message)
+    else:
+        return pull.create_comment(message)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Merge PRs in multiple repos")
     parser.add_argument("REPO_CSV", help="List of repositories to post comments to.")
@@ -150,6 +157,12 @@ if __name__ == "__main__":
         "--start", "-s", type=int, help="repo no to start processing from."
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Do not push to repos, just report on console %(default)s.",
+    )
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
@@ -217,15 +230,13 @@ if __name__ == "__main__":
             marking_repo = marking_dict[repo_id]
             if not marking_repo["COMMIT"]:
                 logging.warning(f"\t Repo {repo_name} has no tag submission.")
-                comment = pr_feedback.create_comment(
-                    f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
-                )
+                message = f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
+                issue_feedback_comment(pr_feedback, message, args.dry_run)
                 continue
             elif marking_repo["CERTIFICATION"] != "Yes":
                 logging.warning(f"\t Repo {repo_name} has no certification.")
-                comment = pr_feedback.create_comment(
-                    f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
-                )
+                message = f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
+                issue_feedback_comment(pr_feedback, message, args.dry_run)
                 continue
 
             # Now there is a proper submission; issue the autograder report & feedback summary
@@ -235,15 +246,16 @@ if __name__ == "__main__":
                 file_report = marking_repo["REPORT"]
             with open(os.path.join(args.REPORT_FOLDER, file_report), "r") as report:
                 report_text = report.read()
-            comment = pr_feedback.create_comment(
+
+            message = (
                 f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"
             )
+            issue_feedback_comment(pr_feedback, message, args.dry_run)
 
             # create a new comment with the final marking/feedback table results
             feedback_text = make_template("p0", marking_repo)
-            comment = pr_feedback.create_comment(
-                f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
-            )
+            message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
+            issue_feedback_comment(pr_feedback, message, args.dry_run)
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
