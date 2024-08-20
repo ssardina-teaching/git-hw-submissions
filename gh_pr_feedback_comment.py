@@ -23,6 +23,8 @@ from typing import List
 from datetime import datetime
 from zoneinfo import ZoneInfo  # this should work Python 3.9+
 from github import GithubException
+import importlib.util
+import sys
 
 import util
 
@@ -48,77 +50,8 @@ GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "errors_pr.csv"
 
-FEEDBACK_MESSAGE_P0 = """
-
--------------------------
-Your code has been automarked for technical correctness and your grades are now preliminary registered!
-
-Please note the following:
-
-- We will be running code similarity checks, as well as inspecting reports and code manually, in an ongoing basis for all the projects. We reserve the right to adjust the marks or to have a demo meeting with you, if necessary.
-- The total points above is raw and does not reflect the weighting of each question (as per spec.).
-
-Thanks for your submission & hope you enjoyed and learnt from this "dry-run" project!
-
-Sebastian & Andrew
-"""
 
 FEEDBACK_MESSAGE = FEEDBACK_MESSAGE_P0
-
-
-def make_template(project, mapping):
-    if project == "p0":
-        return p0_template(mapping)
-
-
-def p0_template(mapping):
-    return f"""Project 0 results
-===========
-
-|                                          |                             |
-|:-----------------------------------------|----------------------------:|
-|**Student number:**                         | {mapping['STUDENT NO']} |
-|**Student full name:**                      | {mapping['Preferred Name']} |
-|**Github user:**                            | {mapping['GHU']} |
-|**Git repo:**                               | {mapping['URL-REPO']} |
-|**Timestamp submission:**                   | {mapping['TIMESTAMP']} |
-|**Commit marked:**                          | {mapping['COMMIT']} |
-|**No of commits:**                          | {mapping['SE-NOCOM']} |
-|**Commit ratio (<1 signal problems)**       | {mapping['SE-RATIO']} |
-|**Days late (if any):**                     | {mapping['DYS LATE']} |
-|**Certified?**                              | {mapping['CERTIFICATION']} |
-
-**NOTE:** Commit ratio is calculated pro-rata to the points achieved.
-    
-## Raw points
-|                                       |                     |
-|:--------------------------------------|--------------------:|
-|**Q1:**                                | {mapping['Q1-TOT']} |
-|**Q2:**                                | {mapping['Q2-TOT']} |
-|**Q3:**                                | {mapping['Q3-TOT']} |
-    
-## Software Engineering (SE) (discount) weights (if any)
-|                                       |                      |
-|:--------------------------------------|---------------------:|
-|**Merged feedback PR:**                | {mapping['SE-PRMER']} |
-|**Commits with invalid username:**     | {mapping['SE-GHUSR']} |
-|**Commit quality:**                    | {mapping['SE-LOWRAT']} |
-    
-## Summary of results
-|                                           |                       |
-|:------------------------------------------|----------------------:|
-|**Raw points collected (out of 3):**       | {mapping['POINTS']}   |
-|**Total weight adjustment (1 if none):**   | {mapping['WEIGHT']}   |
-|**Late penalty (10/day, if any):**         | {mapping['LATE PEN']} |
-|**Final marks (out of 100):**              | {mapping['MARKS']}    |
-|**Grade:**                                 | {mapping['GRADE']}    |
-|**Marking report:**                        | See comment before    |
-|**Notes (if any)**                         | {mapping['NOTE']}     |
-
-The final marks (out of 100) is calculated as follows:
-
-**FINAL MARKS** = ((RAW POINTS / TOTAL POINTS)*WEIGHT)*100 - LATE PENALTY
-"""
 
 
 def load_marking_dict(file_path: str) -> dict:
@@ -146,6 +79,9 @@ if __name__ == "__main__":
     parser.add_argument("MARKING_CSV", help="List of student results.")
     parser.add_argument("REPORT_FOLDER", help="Folder containing student report files.")
     parser.add_argument(
+        "CONFIG", help="Python file with the specific config for for assessment."
+    )
+    parser.add_argument(
         "--repos", nargs="+", help="if given, only the teams specified will be parsed."
     )
     parser.add_argument(
@@ -167,6 +103,18 @@ if __name__ == "__main__":
 
     now = datetime.now(TIMEZONE).isoformat()
     logging.info(f"Starting on {TIMEZONE}: {now}\n")
+
+    # Now load the report feedback module for the specific assessment being used
+    # Load the module from the given path
+    # https://medium.com/@Doug-Creates/dynamically-import-a-module-by-full-path-in-python-bbdf4815153e
+    spec = importlib.util.spec_from_file_location("module_name", args.CONFIG)
+    module_feedback = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module_feedback)
+    # Add the module to sys.modules
+    sys.modules["module_name"] = module_feedback
+
+    FEEDBACK_MESSAGE = getattr(module_feedback, "FEEDBACK_MESSAGE")
+    report_feedback = getattr(module_feedback, "report_feedback")
 
     # Get the list of relevant repos from the CSV file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
@@ -253,7 +201,7 @@ if __name__ == "__main__":
             issue_feedback_comment(pr_feedback, message, args.dry_run)
 
             # create a new comment with the final marking/feedback table results
-            feedback_text = make_template("p0", marking_repo)
+            feedback_text = report_feedback(marking_repo)
             message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
             issue_feedback_comment(pr_feedback, message, args.dry_run)
         except GithubException as e:
