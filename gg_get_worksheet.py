@@ -58,6 +58,11 @@ if __name__ == "__main__":
         default="credentials.json",
         help="File containing Google credentials %(default)s.",
     )
+    parser.add_argument(
+        "--webserver",
+        action="store_true",
+        help="Flag to enable webserver functionality for Google authentication (otherwise console-based).",
+    )
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
@@ -70,7 +75,9 @@ if __name__ == "__main__":
     csv_file = args.output
 
     # sheets = Sheets.from_files("~/client_secrets.json", "~/storage.json")
-    sheets = Sheets.from_files(google_credentials, "storage.json")
+    sheets = Sheets.from_files(
+        google_credentials, "storage.json", no_webserver=args.webserver
+    )
 
     marking = sheets[spreadsheet_id].find(sheet_name)
 
