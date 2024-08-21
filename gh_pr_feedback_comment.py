@@ -51,18 +51,31 @@ GH_URL_PREFIX = "https://github.com/"
 CSV_ERRORS = "errors_pr.csv"
 
 
-FEEDBACK_MESSAGE = FEEDBACK_MESSAGE_P0
-
-
-def load_marking_dict(file_path: str) -> dict:
+def load_marking_dict(file_path: str, col_key="GHU") -> dict:
     """
     Load the marking dictionary from a CSV file; keys are GH username
     """
-    comment_dict = {}
-    with open(file_path, "r") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            comment_dict[row["GHU"].lower()] = row
+    import pandas as pd
+    import numpy as np
+
+    # Old way to get a dictionary - does not regonise int type of columns
+    # comment_dict = {}
+    # with open(file_path, "r") as f:
+    #     reader = csv.DictReader(f)
+    #     for row in reader:
+    #         comment_dict[row["GHU"].lower()] = row
+
+    # Now we use Pandas as it recognizes column types (numbers)
+    df = pd.read_csv(file_path)
+    df.dropna(subset=[col_key], inplace=True)
+    df.drop_duplicates(subset=[col_key], keep="last", inplace=True)
+    df = df.replace(np.nan, "")
+    df.set_index(col_key, inplace=True)
+    df = df.round(2)
+    comment_dict = df.to_dict(orient="index")
+    for x in comment_dict:
+        comment_dict[x]["GHU"] = x
+
     return comment_dict
 
 
@@ -93,6 +106,12 @@ if __name__ == "__main__":
         "--start", "-s", type=int, help="repo no to start processing from."
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        default=False,
+        help="Do not push the automarking report; just feedback result %(default)s.",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -176,6 +195,11 @@ if __name__ == "__main__":
 
             # get the marking data for the student/repo
             marking_repo = marking_dict[repo_id]
+
+            # print(marking_repo["Q3T"])
+            # print(type(marking_repo["Q3T"]))
+            # exit(0)
+
             if not marking_repo["COMMIT"]:
                 logging.warning(f"\t Repo {repo_name} has no tag submission.")
                 message = f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
@@ -186,19 +210,23 @@ if __name__ == "__main__":
                 message = f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
                 issue_feedback_comment(pr_feedback, message, args.dry_run)
                 continue
+            elif marking_repo["SKIP"]:
+                logging.warning(
+                    f"\t Repo {repo_name} is flagged to be SKIPPED...: {marking_repo['SKIP']}"
+                )
+                continue
 
             # Now there is a proper submission; issue the autograder report & feedback summary
             # create a new comment with the automarker report
-            file_report = f"{repo_id}.txt"  # default report filename
-            if "REPORT" in marking_repo:
-                file_report = marking_repo["REPORT"]
-            with open(os.path.join(args.REPORT_FOLDER, file_report), "r") as report:
-                report_text = report.read()
+            if not args.no_report:
+                file_report = f"{repo_id}.txt"  # default report filename
+                if "REPORT" in marking_repo:
+                    file_report = marking_repo["REPORT"]
+                with open(os.path.join(args.REPORT_FOLDER, file_report), "r") as report:
+                    report_text = report.read()
 
-            message = (
-                f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"
-            )
-            issue_feedback_comment(pr_feedback, message, args.dry_run)
+                message = f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"
+                issue_feedback_comment(pr_feedback, message, args.dry_run)
 
             # create a new comment with the final marking/feedback table results
             feedback_text = report_feedback(marking_repo)
