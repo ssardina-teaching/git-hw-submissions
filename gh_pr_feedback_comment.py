@@ -25,10 +25,9 @@ from zoneinfo import ZoneInfo  # this should work Python 3.9+
 from github import GithubException
 import importlib.util
 import sys
+import time
 
 import util
-
-
 import logging
 import coloredlogs
 
@@ -49,6 +48,8 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "errors_pr.csv"
+
+SLEEP_TIME = 5  # sleep time in seconds between API calls
 
 
 def load_marking_dict(file_path: str, col_key="GHU") -> dict:
@@ -74,14 +75,16 @@ def load_marking_dict(file_path: str, col_key="GHU") -> dict:
     df = df.round(2)
     comment_dict = df.to_dict(orient="index")
     for x in comment_dict:
-        comment_dict[x]["GHU"] = x
+        comment_dict[x][col_key] = x
 
     return comment_dict
 
 
 def issue_feedback_comment(pull, message, dry_run=False):
     if dry_run:
+        print("=" * 80)
         print(message)
+        print("=" * 80)
     else:
         return pull.create_comment(message)
 
@@ -103,7 +106,10 @@ if __name__ == "__main__":
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument(
-        "--start", "-s", type=int, help="repo no to start processing from."
+        "--start",
+        "-s",
+        type=int,
+        help="repo no to start processing from (starts in 1).",
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
     parser.add_argument(
@@ -137,10 +143,12 @@ if __name__ == "__main__":
 
     # Get the list of relevant repos from the CSV file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
+    start_no = 1
+    end_no = len(list_repos)
     if args.repos is None:
         start_no = args.start if args.start is not None else 0
-        end_no = (args.end if args.end is not None else len(list_repos)) + 1
-        list_repos = list_repos[start_no:end_no]
+        end_no = args.end if args.end is not None else len(list_repos)
+        list_repos = list_repos[start_no - 1 : end_no]
 
     logging.info(args)
 
@@ -175,12 +183,17 @@ if __name__ == "__main__":
     no_errors = 0
     errors = []
     for k, r in enumerate(list_repos):
+        if k % 10 == 0 and k > 0:
+            logging.info(f"Sleep for {SLEEP_TIME} seconds...")
+            time.sleep(SLEEP_TIME)
+
         repo_id = r["REPO_ID"].lower()
         repo_name = r["REPO_NAME"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
-        logging.info(f"Processing repo {k+1}/{no_repos}: {repo_id} ({repo_url})...")
-
+        logging.info(
+            f"Processing repo {k+start_no}/{end_no}: {repo_id} - {repo_url}/pull/1"
+        )
         if repo_id not in marking_dict:
             logging.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
             no_errors += 1
@@ -205,7 +218,7 @@ if __name__ == "__main__":
                 message = f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
                 issue_feedback_comment(pr_feedback, message, args.dry_run)
                 continue
-            elif marking_repo["CERTIFICATION"] != "Yes":
+            elif marking_repo["CERTIFICATION"].upper() != "YES":
                 logging.warning(f"\t Repo {repo_name} has no certification.")
                 message = f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
                 issue_feedback_comment(pr_feedback, message, args.dry_run)
@@ -219,14 +232,49 @@ if __name__ == "__main__":
             # Now there is a proper submission; issue the autograder report & feedback summary
             # create a new comment with the automarker report
             if not args.no_report:
-                file_report = f"{repo_id}.txt"  # default report filename
+                file_report = os.path.join(
+                    args.REPORT_FOLDER, f"{repo_id}.txt"
+                )  # default report filename
+                file_report_error = os.path.join(
+                    args.REPORT_FOLDER, f"{repo_id}_ERROR.txt"
+                )  # default report filename
                 if "REPORT" in marking_repo:
-                    file_report = marking_repo["REPORT"]
-                with open(os.path.join(args.REPORT_FOLDER, file_report), "r") as report:
-                    report_text = report.read()
+                    file_report = os.path.join(
+                        args.REPORT_FOLDER, marking_repo["REPORT"]
+                    )
 
-                message = f"# Full autograder report \n\n ```{report_text}```\n{FEEDBACK_MESSAGE}"
-                issue_feedback_comment(pr_feedback, message, args.dry_run)
+                # if there is an error report, then use that one
+                error_text = None
+                if os.path.exists(file_report_error):
+                    file_report = file_report_error
+                    error_text = (
+                        "Your solution seems non-error free as requested in spec... 🥴"
+                    )
+
+                if not os.path.exists(file_report):
+                    logging.error(
+                        f"\t Error in repo {repo_name}: report {file_report} (or _ERROR) not found."
+                    )
+                    no_errors += 1
+                    errors.append(repo_id)
+                    continue
+                if os.stat(file_report).st_size > 50000:
+                    logging.warning(f"\t Too large automarker report to publish")
+                    issue_feedback_comment(
+                        pr_feedback,
+                        f"Too large automarker report to publish... 🥴",
+                        args.dry_run,
+                    )
+                else:
+                    # ok we have a good automarker report to publish now...
+                    with open(os.path.join(file_report), "r") as report:
+                        report_text = report.read()
+
+                    message = f"# Full autograder report \n\n ```{report_text}```"
+                    if error_text is not None:
+                        message += f"\n**NOTE**: {error_text}"
+                    message += f"\n{FEEDBACK_MESSAGE}"
+                    issue_feedback_comment(pr_feedback, message, args.dry_run)
 
             # create a new comment with the final marking/feedback table results
             feedback_text = report_feedback(marking_repo)
@@ -236,16 +284,14 @@ if __name__ == "__main__":
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
             errors.append(repo_id)
-        except FileNotFoundError as e:
-            logging.error(
-                f"\t Error in repo {repo_name}: report file {repo_id}.txt not found in {args.REPORT_FOLDER}."
-            )
+        except Exception as e:
+            logging.error(f"\t Unknown error in repo {repo_name}: {e}")
             no_errors += 1
             errors.append(repo_id)
 
     logging.info(f"Finished! Total repos: {no_repos} - Errors: {no_errors}.")
 
-    with open(CSV_ERRORS, "w", newline="") as file:
+    with open(CSV_ERRORS, "a", newline="") as file:
         writer = csv.writer(file)
         writer.writerows([[repo_id] for repo_id in errors])
 
