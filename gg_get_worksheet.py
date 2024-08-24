@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     # sheets = Sheets.from_files("~/client_secrets.json", "~/storage.json")
     sheets = Sheets.from_files(
-        google_credentials, "storage.json", no_webserver=args.webserver
+        google_credentials, "storage.json", no_webserver=not args.webserver
     )
 
     marking = sheets[spreadsheet_id].find(sheet_name)
