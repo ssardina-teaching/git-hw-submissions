@@ -340,6 +340,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--teams",
+        "--repos",
         nargs="+",
         help="if given, only the teams specified will be cloned/updated.",
     )
