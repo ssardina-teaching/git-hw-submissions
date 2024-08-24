@@ -191,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
     parser.add_argument(
-        "--teams", nargs="+", help="if given, only the teams specified will be parsed."
+        "--teams", "--repos", nargs="+", help="if given, only the teams specified will be parsed."
     )
     parser.add_argument(
         "--tag", help="if given, check up to a given tag (otherwise all repo)."
