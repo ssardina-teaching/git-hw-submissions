@@ -1,5 +1,5 @@
 """
-Script to obtain all the repositories from a GitHub Classroom
+Script to merge a PR in all the repositories from a GitHub Classroom
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
