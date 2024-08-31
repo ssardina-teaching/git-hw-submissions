@@ -92,7 +92,7 @@ def traverse_commit(c):
     return set_c
 
 
-def get_stats_contrib_repo(g: Github, repo_name, sha=None):
+def get_stats_contrib_repo(g: Github, repo_name, sha=None, gh_contributions=False):
     """
     Extracts commit stats for a repo up to some sha/tag by inspecting each commit
     This will even parse commits that have no author login as it will extract base git commit email info
@@ -113,46 +113,58 @@ def get_stats_contrib_repo(g: Github, repo_name, sha=None):
     contributors = [
         x.login for x in repo.get_collaborators() if not x.login in IGNORE_USERS
     ]
-    repo_commits = set()
-    if sha is not None:  # a particular branch/sha has been given
-        repo_commits = set(repo.get_commits(sha=sha))
-    else:
-        repo_branches = repo.get_branches()
-        for branch in repo_branches:
-            name_branch = branch.name
-            logging.debug("Processing branch: ", name_branch)
-            branch_commits = list(repo.get_commits(sha=name_branch))
-            repo_commits = repo_commits.union(
-                branch_commits
-            )  # union bc there will be same shared sha commits
 
     # now count each author contribution
     author_commits = {}
     author_additions = {}
     author_deletions = {}
-    for (
-        c
-    ) in (
-        repo_commits
-    ):  # c is <class 'github.Commit.Commit'> https://pygithub.readthedocs.io/en/latest/github_objects/Commit.html
-        try:
-            author_id = (
-                c.author.login
-            )  # c.author is a github.NamedUser.NamedUser - https://pygithub.readthedocs.io/en/latest/github_objects/NamedUser.html#github.NamedUser.NamedUser
-        except Exception as e:
-            # Commits is not attached to a GitHub account, just get whatever text name was used
-            author_id = f"name({c.commit.author.name})"
 
-        if author_id in IGNORE_USERS:
-            continue
+    # method 1: use GH contributions to MAIN
+    if gh_contributions:
+        for contribution in repo.get_stats_contributors():
+            if contribution.author.login in IGNORE_USERS:
+                continue
+            author_id = contribution.author.login
 
-        author_commits[author_id] = author_commits.get(author_id, 0) + 1
-        author_additions[author_id] = (
-            author_additions.get(author_id, 0) + c.stats.additions
-        )
-        author_deletions[author_id] = (
-            author_deletions.get(author_id, 0) + c.stats.deletions
-        )
+            author_commits[author_id] = contribution.total
+            author_additions[author_id] = -1
+            author_deletions[author_id] = -1
+    else:
+        # method 2: go over each commit in every branch
+        #   this wil NOT get missconfigured usernames not correctly linked to GH accounts
+        #   also will not get commits that are not in the main branch
+        repo_commits = set()
+        if sha is not None:  # a particular branch/sha has been given
+            repo_commits = set(repo.get_commits(sha=sha))
+        else:
+            repo_branches = repo.get_branches()
+            for branch in repo_branches:
+                name_branch = branch.name
+                logging.debug("Processing branch: ", name_branch)
+                branch_commits = list(repo.get_commits(sha=name_branch))
+                repo_commits = repo_commits.union(
+                    branch_commits
+                )  # union bc there will be same shared sha commits
+
+        # c is <class 'github.Commit.Commit'> https://pygithub.readthedocs.io/en/latest/github_objects/Commit.html
+        for c in repo_commits:
+            try:
+                # c.author is a github.NamedUser.NamedUser - https://pygithub.readthedocs.io/en/latest/github_objects/NamedUser.html#github.NamedUser.NamedUser
+                author_id = c.author.login
+            except Exception as e:
+                # Commits is not attached to a GitHub account, just get whatever text name was used
+                author_id = f"name({c.commit.author.name})"
+
+            if author_id in IGNORE_USERS:
+                continue
+
+            author_commits[author_id] = author_commits.get(author_id, 0) + 1
+            author_additions[author_id] = (
+                author_additions.get(author_id, 0) + c.stats.additions
+            )
+            author_deletions[author_id] = (
+                author_deletions.get(author_id, 0) + c.stats.deletions
+            )
 
     no_commits = sum([author_commits[author_id] for author_id in author_commits])
 
@@ -191,18 +203,25 @@ if __name__ == "__main__":
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
     parser.add_argument(
-        "--teams", "--repos", nargs="+", help="if given, only the teams specified will be parsed."
+        "--teams",
+        "--repos",
+        nargs="+",
+        help="if given, only the teams specified will be parsed.",
     )
     parser.add_argument(
         "--tag", help="if given, check up to a given tag (otherwise all repo)."
     )
-    parser.add_argument("-u", "--user", help="GitHub username.")
     parser.add_argument(
         "-t",
         "--token-file",
         help="File containing GitHub authorization token/password.",
     )
-    parser.add_argument("-p", "--password", help="GitHub username's password.")
+    parser.add_argument(
+        "--gh-contributions",
+        "-ghc",
+        action="store_true",
+        help="Use GitHub contribution to main stats (Default: %(default)s).",
+    )
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
@@ -219,9 +238,7 @@ if __name__ == "__main__":
         logging.error("No authentication provided, quitting....")
         exit(1)
     try:
-        g = util.open_gitHub(
-            user=args.user, token_file=args.token_file, password=args.password
-        )
+        g = util.open_gitHub(token_file=args.token_file)
     except:
         logging.error(
             "Something wrong happened during GitHub authentication. Check credentials."
@@ -237,7 +254,7 @@ if __name__ == "__main__":
         logging.info(f"Processing repo {repo_id} ({repo_url})...")
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(
-                g, r["REPO_NAME"], sha=args.tag
+                g, r["REPO_NAME"], sha=args.tag, gh_contributions=args.gh_contributions
             )
         except Exception as e:
             logging.info(f"\t Exception repo {repo_id}: {e}")
