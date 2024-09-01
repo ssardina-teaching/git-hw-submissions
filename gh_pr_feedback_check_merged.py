@@ -49,7 +49,7 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
 
-CSV_MERGED = "merged_pr.csv"
+CSV_MERGED = "pr_merged.csv"
 
 
 if __name__ == "__main__":
