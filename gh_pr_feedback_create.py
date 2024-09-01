@@ -91,7 +91,13 @@ if __name__ == "__main__":
         "--dry-run",
         action="store_true",
         default=False,
-        help="Do not push to repos, just report on console %(default)s.",
+        help="Do not push to repos, just report on console (Default: %(default)s.)",
+    )
+    parser.add_argument(
+        "--csv",
+        action="store_true",
+        default=False,
+        help="Dump results into CSV files (Default: %(default)s.)",
     )
 
     args = parser.parse_args()
@@ -136,6 +142,16 @@ if __name__ == "__main__":
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 
         repo = g.get_repo(repo_name)
+
+        # first check that no force-pushed has over-written main branch
+        commits = repo.get_commits("main")
+        first_commit_main = commits[commits.totalCount - 1]
+        if first_commit_main.sha != args.BASE_SHA:
+            logging.error(f"\t First commit is different from expected, forced pushed?")
+            errors.append([repo_id, repo_url, "forced", first_commit_main.sha])
+            continue
+
+        # OK first commit in main exists, let's check if the PR exists and create it if not
         try:
             pr_feedback = repo.get_pull(number=1)  # get the first PR - feedback
 
@@ -216,16 +232,17 @@ if __name__ == "__main__":
     else:
         logging.info(f"All repos have their Feedback PRs!")
 
-    # Write error CSV file
-    with open(CSV_ISSUES, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
-        writer.writerows(errors)
-    logging.info(f"Errors written to {CSV_ISSUES}.")
+    if args.csv:
+        # Write error CSV file
+        with open(CSV_ISSUES, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
+            writer.writerows(errors)
+        logging.info(f"Errors written to {CSV_ISSUES}.")
 
-    # Write error CSV file
-    with open(CSV_MISSING, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
-        writer.writerows(errors)
-    logging.info(f"Missing PR repos written to {CSV_MISSING}.")
+        # Write error CSV file
+        with open(CSV_MISSING, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
+            writer.writerows(errors)
+        logging.info(f"Missing PR repos written to {CSV_MISSING}.")
