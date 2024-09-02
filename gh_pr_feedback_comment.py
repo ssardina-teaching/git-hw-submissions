@@ -39,8 +39,13 @@ TIMEZONE = ZoneInfo(TIMEZONE_STR)
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
-coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
+
+logger = logging.getLogger(__name__)
+
+# logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+coloredlogs.install(
+    logger=logger, level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE
+)
 
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
@@ -127,7 +132,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
-    logging.info(f"Starting on {TIMEZONE}: {now}\n")
+    logger.info(f"Starting on {TIMEZONE}: {now}\n")
 
     # Now load the report feedback module for the specific assessment being used
     # Load the module from the given path
@@ -140,6 +145,7 @@ if __name__ == "__main__":
 
     FEEDBACK_MESSAGE = getattr(module_feedback, "FEEDBACK_MESSAGE")
     report_feedback = getattr(module_feedback, "report_feedback")
+    check_submission = getattr(module_feedback, "check_submission")
 
     # Get the list of relevant repos from the CSV file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
@@ -148,14 +154,13 @@ if __name__ == "__main__":
     if args.repos is None:
         start_no = args.start if args.start is not None else 0
         end_no = args.end if args.end is not None else len(list_repos)
+        print(start_no, end_no)
         list_repos = list_repos[start_no - 1 : end_no]
 
-    logging.info(args)
+    logger.info(args)
 
     if len(list_repos) == 0:
-        logging.error(
-            f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.'
-        )
+        logger.error(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
 
     marking_dict = load_marking_dict(args.MARKING_CSV)
@@ -164,12 +169,12 @@ if __name__ == "__main__":
     # Authenticate to GitHub
     ###############################################
     if not args.token_file:
-        logging.error("No token file for authentication provided, quitting....")
+        logger.error("No token file for authentication provided, quitting....")
         exit(1)
     try:
         g = util.open_gitHub(token_file=args.token_file)
     except:
-        logging.error(
+        logger.error(
             "Something wrong happened during GitHub authentication. Check credentials."
         )
         exit(1)
@@ -179,32 +184,38 @@ if __name__ == "__main__":
     ###############################################
     authors_stats = []
     no_repos = len(list_repos)
-    no_merged = 0
-    no_errors = 0
     errors = []
     for k, r in enumerate(list_repos):
         if k % 10 == 0 and k > 0:
-            logging.info(f"Sleep for {SLEEP_TIME} seconds...")
+            logger.info(f"Sleep for {SLEEP_TIME} seconds...")
             time.sleep(SLEEP_TIME)
 
         repo_id = r["REPO_ID"].lower()
         repo_name = r["REPO_NAME"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
-        logging.info(
+        logger.info(
             f"Processing repo {k+start_no}/{end_no}: {repo_id} - {repo_url}/pull/1"
         )
         if repo_id not in marking_dict:
-            logging.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
-            no_errors += 1
-            errors.append(repo_id)
+            logger.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
+            errors.append([repo_id, repo_url, "Repo not found in marking CSV"])
             continue
 
         repo = g.get_repo(repo_name)
         try:
-            # get the first PR - feedback
+            # Find the Feedback PR - feedback
             #   see we cannot use .get_pull(1) bc it involves reviewing the PRs!
             pr_feedback = repo.get_issue(number=1)
+            if pr_feedback.title != "Feedback":
+                for pr_feedback in repo.get_pulls():
+                    if pr_feedback.title == "Feedback":
+                        logger.warning(
+                            f"\t Feedback PR found in number {pr_feedback.number}! Using this one..."
+                        )
+                        break
+                    logger.error("\t Feedback PR not found! Skipping...")
+                errors.append([repo_id, repo_url, "Feedback PR not found"])
 
             # get the marking data for the student/repo
             marking_repo = marking_dict[repo_id]
@@ -213,20 +224,12 @@ if __name__ == "__main__":
             # print(type(marking_repo["Q3T"]))
             # exit(0)
 
-            if not marking_repo["COMMIT"]:
-                logging.warning(f"\t Repo {repo_name} has no tag submission.")
-                message = f"Dear @{repo_id}: no submission tag found; no marking as per spec. :cry:"
+            # First, check the submission row: should we skip it for any reason?
+            #   no certification, no submission, no marking, audit, etc..
+            message, skip = check_submission(repo_id, marking_repo, logger)
+            if message is not None:
                 issue_feedback_comment(pr_feedback, message, args.dry_run)
-                continue
-            elif marking_repo["CERTIFICATION"].upper() != "YES":
-                logging.warning(f"\t Repo {repo_name} has no certification.")
-                message = f"Dear @{repo_id}: no certification found; no marking as per spec. :cry:"
-                issue_feedback_comment(pr_feedback, message, args.dry_run)
-                continue
-            elif marking_repo["SKIP"]:
-                logging.warning(
-                    f"\t Repo {repo_name} is flagged to be SKIPPED...: {marking_repo['SKIP']}"
-                )
+            if skip:
                 continue
 
             # Now there is a proper submission; issue the autograder report & feedback summary
@@ -252,14 +255,13 @@ if __name__ == "__main__":
                     )
 
                 if not os.path.exists(file_report):
-                    logging.error(
+                    logger.error(
                         f"\t Error in repo {repo_name}: report {file_report} (or _ERROR) not found."
                     )
-                    no_errors += 1
-                    errors.append(repo_id)
+                    errors.append([repo_id, repo_url, "Report not found"])
                     continue
                 if os.stat(file_report).st_size > 50000:
-                    logging.warning(f"\t Too large automarker report to publish")
+                    logger.warning(f"\t Too large automarker report to publish")
                     issue_feedback_comment(
                         pr_feedback,
                         f"Too large automarker report to publish... 🥴",
@@ -281,18 +283,17 @@ if __name__ == "__main__":
             message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
             issue_feedback_comment(pr_feedback, message, args.dry_run)
         except GithubException as e:
-            logging.error(f"\t Error in repo {repo_name}: {e}")
-            no_errors += 1
-            errors.append(repo_id)
+            logger.error(f"\t Error in repo {repo_name}: {e}")
+            errors.append([repo_id, repo_url, e])
         except Exception as e:
-            logging.error(f"\t Unknown error in repo {repo_name}: {e}")
-            no_errors += 1
-            errors.append(repo_id)
+            logger.error(f"\t Unknown error in repo {repo_name}: {e}")
+            errors.append([repo_id, repo_url, e])
 
-    logging.info(f"Finished! Total repos: {no_repos} - Errors: {no_errors}.")
+    logger.info(f"Finished! Total repos: {no_repos} - Errors: {len(errors)}.")
 
     with open(CSV_ERRORS, "a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerows([[repo_id] for repo_id in errors])
+        writer.writerow(["REPO_ID", "REPO_URL", "ERROR"])
+        writer.writerows(errors)
 
-    logging.info(f"Repos with errors written to {CSV_ERRORS}.")
+    logger.info(f"Repos with errors written to {CSV_ERRORS}.")
