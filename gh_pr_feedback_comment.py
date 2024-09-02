@@ -52,7 +52,7 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
 
-CSV_ERRORS = "errors_pr.csv"
+CSV_ERRORS = "pr_comment_errors.csv"
 
 SLEEP_TIME = 5  # sleep time in seconds between API calls
 
@@ -85,13 +85,13 @@ def load_marking_dict(file_path: str, col_key="GHU") -> dict:
     return comment_dict
 
 
-def issue_feedback_comment(pull, message, dry_run=False):
+def issue_feedback_comment(pr, message, dry_run=False):
     if dry_run:
         print("=" * 80)
         print(message)
         print("=" * 80)
     else:
-        return pull.create_comment(message)
+        return pr.create_comment(message)
 
 
 if __name__ == "__main__":
@@ -208,14 +208,18 @@ if __name__ == "__main__":
             #   see we cannot use .get_pull(1) bc it involves reviewing the PRs!
             pr_feedback = repo.get_issue(number=1)
             if pr_feedback.title != "Feedback":
-                for pr_feedback in repo.get_pulls():
-                    if pr_feedback.title == "Feedback":
+                pr_feedback = None
+                for pr in repo.get_pulls():
+                    if pr.title == "Feedback":
                         logger.warning(
-                            f"\t Feedback PR found in number {pr_feedback.number}! Using this one..."
+                            f"\t Feedback PR found in number {pr.number}! Using this one: {repo_url}/pull/{pr.number}"
                         )
+                        pr_feedback = repo.get_issue(number=pr.number)
                         break
+                if pr_feedback is None:
                     logger.error("\t Feedback PR not found! Skipping...")
-                errors.append([repo_id, repo_url, "Feedback PR not found"])
+                    errors.append([repo_id, repo_url, "Feedback PR not found"])
+                    continue
 
             # get the marking data for the student/repo
             marking_repo = marking_dict[repo_id]
