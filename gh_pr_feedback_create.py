@@ -12,11 +12,7 @@ Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
-import base64
 import csv
-import re
-import traceback
-import os
 
 from argparse import ArgumentParser
 import util
@@ -47,7 +43,7 @@ coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 
 GH_URL_PREFIX = "https://github.com/"
-CSV_ISSUES = "pr_issues.csv"
+CSV_ISSUES = "pr_errors.csv"
 CSV_MISSING = "pr_missing.csv"
 
 
@@ -71,9 +67,6 @@ MESSAGE_PR = """
 
 Subscribed: @{GH_USERNAME}
 """
-
-
-# BASE_SHA = "a7b3d7aee55d00d55ee29b8a505d17fc8283e9f8"
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Merge PRs in multiple repos")
