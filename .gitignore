@@ -81,3 +81,4 @@ google-api/token.json
 credentials.json
 storage.json
 token.json
+client_secret.json
