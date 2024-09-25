@@ -41,12 +41,19 @@ __copyright__ = "Copyright 2024"
 
 from argparse import ArgumentParser
 from datetime import datetime
+import os
 from zoneinfo import ZoneInfo  # this should work Python 3.9+
 
 import logging
 import coloredlogs
 
 from gsheets import Sheets
+
+# https://docs.iterative.ai/PyDrive2/
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
+
+CREDENTIALS_FILE = "storage.json"
 
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
@@ -91,6 +98,29 @@ if __name__ == "__main__":
         default="submissions.csv",
         help="CSV submission file %(default)s.",
     )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="./output",
+        help="Directory where the submissions should be downloaded (Default: %(default)s).",
+    )
+    parser.add_argument(
+        "--file-name",
+        type=str,
+        help="Rename the downloaded name to this",
+    )
+    parser.add_argument(
+        "--column-id",
+        type=str,
+        default="D",
+        help="Column where the submission id is recorded (e.g., student number) (Default: %(default)s).",
+    )
+    parser.add_argument(
+        "--column-file",
+        type=str,
+        default="G",
+        help="Column where the link to the file to download is located (Default: %(default)s).",
+    )
 
     args = parser.parse_args()
 
@@ -102,11 +132,25 @@ if __name__ == "__main__":
     sheet_name = args.SHEET
     google_credentials = args.credentials
     csv_file = args.csv
+    output_dir = args.output
 
-    # sheets = Sheets.from_files("~/client_secrets.json", "~/storage.json")
+    # check output path exists
+    if os.path.exists(output_dir):
+        if not os.path.isdir(output_dir):
+            raise Exception(f"Output path is not a directory: {output_dir}")
+    else:
+        raise Exception(f"Output path does not exists: {output_dir}")
+
+    # get a handle to google sheets via authenticate gsheets
     gg_sheets = Sheets.from_files(
-        google_credentials, "storage.json", no_webserver=not args.webserver
+        google_credentials, CREDENTIALS_FILE, no_webserver=not args.webserver
     )
+
+    # get a handle to google drive via authenticate PyDrive2
+    GoogleAuth.DEFAULT_SETTINGS["client_config_file"] = args.credentials
+    gauth = GoogleAuth()
+    gauth.LoadCredentialsFile(CREDENTIALS_FILE)
+    gg_drive = GoogleDrive(gauth)
 
     sheet = gg_sheets[spreadsheet_id].find(sheet_name)
     sheet.to_csv(csv_file, encoding="utf-8", dialect="excel")
@@ -118,8 +162,28 @@ if __name__ == "__main__":
     for i in range(2, no_rows + 1):
         timestamp = sheet[f"A{i}"]
         email = sheet[f"B{i}"]
-        student_no = sheet[f"D{i}"]
+        student_no = str(sheet[f"{args.column_id}{i}"])
+        file_link = sheet[
+            f"{args.column_file}{i}"
+        ]  # https://drive.google.com/open?id=1D8TPBz3o9Klu2wwlKKxCpvxNFSCaPPhb
+        file_id = file_link.split("=")[
+            1
+        ]  # extract the id 1D8TPBz3o9Klu2wwlKKxCpvxNFSCaPPhb
+        # print(f"Row {i}:", timestamp, email, student_no, file_id)
 
-        print(f"Row {i}:", timestamp, email, student_no)
+        gdrive_file = gg_drive.CreateFile({"id": file_id})
+        file_title = gdrive_file["title"]
+
+        destination_folder = os.path.join(output_dir, student_no)
+        file_name = args.file_name if args.file_name is not None else file_title
+        destination_file = os.path.join(destination_folder, file_name)
+
+        if not os.path.exists(destination_folder):
+            os.makedirs(destination_folder)
+
+        print(
+            f"Downloading submission {i}/{no_rows} for {email} ({student_no}) to {destination_file}: {file_link}"
+        )
+        gdrive_file.GetContentFile(destination_file)
 
     logging.info(f"Finished...")

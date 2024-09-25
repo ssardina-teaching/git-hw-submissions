@@ -17,6 +17,7 @@ This repo contains useful scripts I developed over the years to support student'
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
   - [Google Tools](#google-tools)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
+    - [`gg_sheet_submissions.py`: download submissions from Google Sheets](#gg_sheet_submissionspy-download-submissions-from-google-sheets)
     - [`gg_drive_download.py`: download files in Drive folder](#gg_drive_downloadpy-download-files-in-drive-folder)
   - [Some useful commands](#some-useful-commands)
 
@@ -205,10 +206,18 @@ For authentication to Google Workspaces one needs the the application configurat
 
 > [!TIP]
 > Read [Integrating Google Drive API with Python: A Step-by-Step Guide](https://medium.com/the-team-of-future-learning/integrating-google-drive-api-with-python-a-step-by-step-guide-7811fcd16c44).
+> 
+> - [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts) access:
+>   - [gsheets](https://gsheets.readthedocs.io/en/stable/index.html)
+>   - [pygsheets](https://github.com/nithinmurali/pygsheets)
+> - [Google Drive API](https://developers.google.com/drive/api/guides/about-sdk) access:
+>   - [PyDrive2](https://docs.iterative.ai/PyDrive2/) package for more abstract access to the .
+> - [Google Forms API](https://developers.google.com/forms/api/guides):
+
 
 ### `gg_get_worksheet.py`: download Google Sheet worksheet as CSV file
 
-This script allows to download a Google Sheet from the cloud. It relies on the [gsheets](https://gsheets.readthedocs.io/en/stable/index.html) package to access the [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts).
+This script allows to download a Google Sheet from the cloud. It relies on the [gsheets](https://gsheets.readthedocs.io/en/stable/index.html) package to access the [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts). 
 
 The sheet to download is often a marking sheet. For example, to get the sheet `MARKING` from Google Spreadsheet with id `1kX-fa3_DMNDQROUr1Y-cG89UksTUUqlYdrNcV1yN6NA`:
 
@@ -218,6 +227,16 @@ $ python ./gg_get_worksheet.py 1kX-fa3_DMNDQROUr1Y-cG89UksTUUqlYdrNcV1yN6NA MARK
 The `credentials.json` was obtained via the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python). The first time that is used, a permission will be required. A certificate file `storage.json` will be left then that will allow direct access from there on (until certificate expires).
 
 The authentication will be done via console. Use `--webserver` to open an actual browser.
+
+### `gg_sheet_submissions.py`: download submissions from Google Sheets
+
+This script can process Google Sheets produced by Google Forms, and download links to uploaded files in each submission. Files will be placed in folders identifying each submission, for example with the student number or email associated to the submission.
+
+For example, to download the files recorded in column `G` in the worksheet `W4-resolution` of a Google Sheet with id `1ogCRbx...`, and save each in a folder `submission/XXXX` where `XXXX` is the student number recorded in column `C`:
+
+```shell
+$ python ./gg_sheet_submissions.py 1ogCRbxB3seVhoqhD7iBmVZ8EdpvGEB94oLowDIs5s2g W4-resolution tea --output test/submissions --file-name test.cnf --column-id C --column-file G
+```
 
 ### `gg_drive_download.py`: download files in Drive folder
 
