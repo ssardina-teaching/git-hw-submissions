@@ -17,6 +17,7 @@ This repo contains useful scripts I developed over the years to support student'
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
   - [Google Tools](#google-tools)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
+    - [`gg_drive_download.py`: download files in Drive folder](#gg_drive_downloadpy-download-files-in-drive-folder)
   - [Some useful commands](#some-useful-commands)
 
 
@@ -199,8 +200,11 @@ This script allows to commit and push changes to a collection of repos that alre
 
 To access [Google Workspaces](https://developers.google.com/workspace) resources via the Google API, one needs to enable the API access and get a proper authentication credentials. Different APIs are provided for teh different resources (drive, gmail, sheet, etc.).
 
-Check the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python) to obtain a `credentials.json` file.
+For authentication to Google Workspaces one needs the the application configurations file from APIs Console. Check the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python) to obtain a `client_secret.json` (same as`credentials.json`) file for your project. PyDrive2 also explains how to get the file [here](https://docs.iterative.ai/PyDrive2/quickstart/#authentication).
 
+
+> [!TIP]
+> Read [Integrating Google Drive API with Python: A Step-by-Step Guide](https://medium.com/the-team-of-future-learning/integrating-google-drive-api-with-python-a-step-by-step-guide-7811fcd16c44).
 
 ### `gg_get_worksheet.py`: download Google Sheet worksheet as CSV file
 
@@ -215,6 +219,15 @@ The `credentials.json` was obtained via the [Google Sheet API setup process](htt
 
 The authentication will be done via console. Use `--webserver` to open an actual browser.
 
+### `gg_drive_download.py`: download files in Drive folder
+
+This tool allows downloading file submissions in a Google Drive folder, usually submitted via a Google Form by students. It uses [PyDrive2](https://docs.iterative.ai/PyDrive2/) package for more abstract access to the [Google Drive API](https://developers.google.com/drive/api/guides/about-sdk).
+
+```shell
+$ python ./gg_drive_download.py 1mttf61NwuFNY25idwWw5AKzV3tQQbwlMp980i-9vnkK3PIV4o7ZOtykWvjM-VLqmHuYJ0jX4 -c ~/.ssh/keys/credentials.json --output test/submissions --file-name submissions.cnf
+```
+
+This script is a new and simpler version of the one in [this repo](https://github.com/ssardina-teaching/google-assignment-submission).
 
 ## Some useful commands
 
