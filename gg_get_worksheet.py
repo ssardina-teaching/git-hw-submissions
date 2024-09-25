@@ -52,9 +52,6 @@ from gsheets import Sheets
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
 TIMEZONE_STR = "Australia/Melbourne"
 try:
-    # this should work Python 3.9+
-    from zoneinfo import ZoneInfo
-
     TIMEZONE = ZoneInfo(TIMEZONE_STR)
 except:
     # otherwise fall back to pytz
