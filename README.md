@@ -10,7 +10,7 @@ This repo contains useful scripts I developed over the years to support student'
     - [`gh_create_wiki.py`: push Wiki template to list of repos](#gh_create_wikipy-push-wiki-template-to-list-of-repos)
     - [`gh_member_bulk_team.py`: add/delete GH username to GH teams](#gh_member_bulk_teampy-adddelete-gh-username-to-gh-teams)
     - [`gh_pr_merge.py`: bulk merge of PRs](#gh_pr_mergepy-bulk-merge-of-prs)
-    - [`gh_pr_feedback_create.py`](#gh_pr_feedback_createpy)
+    - [`gh_pr_feedback_create.py`: create Feedback PRs](#gh_pr_feedback_createpy-create-feedback-prs)
     - [`gh_pr_feedback_check_merged.py`: push comments to repo's PRs](#gh_pr_feedback_check_mergedpy-push-comments-to-repos-prs)
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
@@ -121,7 +121,7 @@ For example, to merge PR with title `Sync` from the 40th repo in `repo.csv`:
 $ python ./gh_pr_merge.py repos.csv -t ~/.ssh/keys/gh-token-ssardina.txt --title Sync --start 40 |& tee -a merge_pr.log
 ```
 
-### `gh_pr_feedback_create.py`
+### `gh_pr_feedback_create.py`: create Feedback PRs
 
 Check which repos are missing an expected Feedback PR #1 from GitHub Classroom; and create them as needed. This may be needed because sometimes GH Classroom failed to create the PRs in some repos.
 
