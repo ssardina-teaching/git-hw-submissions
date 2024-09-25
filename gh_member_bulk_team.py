@@ -13,7 +13,6 @@ Some usage help on PyGithub:
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
-import base64
 import os
 import logging
 import datetime
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     teams = []
     for t in org.get_teams():
         teams.append(t.name)
-    print("Teams available:", teams)
+    print(f"Teams available: {len(teams)}", teams)
     if args.list:
         exit(0)
 

@@ -1,5 +1,5 @@
 """
-Check which repos are missing PR #1 for Feedback from GitHub Classroom, and create it
+Check which repos are missing PR #1 for Feedback from GitHub Classroom; create PR if needed
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
@@ -24,13 +24,10 @@ from github import Github, Repository, Organization, GithubException
 import logging
 import coloredlogs
 
-# get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
-TIMEZONE_STR = "Australia/Melbourne"
 from datetime import datetime
+from zoneinfo import ZoneInfo  # this should work Python 3.9+
 
-# this should work Python 3.9+
-from zoneinfo import ZoneInfo
-
+TIMEZONE_STR = "Australia/Melbourne"
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 
 

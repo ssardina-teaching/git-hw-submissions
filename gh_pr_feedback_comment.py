@@ -10,7 +10,7 @@ Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in
 
 Example:
 
-$ python gh_pr_feedback_comment.py repos.csv marking-p0.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback_remark.log
+$ python gh_pr_feedback_comment.py repos.csv marking.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback.log
 """
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"

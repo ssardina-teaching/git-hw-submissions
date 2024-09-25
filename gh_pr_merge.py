@@ -16,12 +16,6 @@ Some usage help on PyGithub:
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2019-2023"
 
-import base64
-import csv
-import re
-import traceback
-import os
-
 from argparse import ArgumentParser
 import util
 from typing import List
@@ -32,13 +26,10 @@ from github import Github, Repository, Organization, GithubException
 import logging
 import coloredlogs
 
-# get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
-TIMEZONE_STR = "Australia/Melbourne"
 from datetime import datetime
+from zoneinfo import ZoneInfo  # this should work Python 3.9+
 
-# this should work Python 3.9+
-from zoneinfo import ZoneInfo
-
+TIMEZONE_STR = "Australia/Melbourne"
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 
 

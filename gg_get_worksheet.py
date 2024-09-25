@@ -9,9 +9,31 @@ This is done using GSHEETS package: https://gsheets.readthedocs.io/en/stable/ind
 
     Google API: https://developers.google.com/drive/api/guides/about-sdk
 
-Example to download the MARKING sheet from the Google Sheet with ID 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs:
+Example to download the MARKING sheet from the Google Sheet with ID 16wc.....:
 
-$ python git-hw-submissions.git/gg_get_worksheet.py 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs MARKING -c ../git-hw-submissions.git/credentials.json -o marking.csv
+$ python git-hw-submissions.git/gg_get_worksheet.py 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs MARKING -c ~/.ssh/keys/credentials.json -o marking.csv
+
+
+====================================================
+Example of how to get a worksheet from a Google Sheet.
+    https://developers.google.com/sheets/api/quickstart/python
+
+Google API: https://developers.google.com/drive/api/guides/about-sdk
+
+Python Client:
+    https://github.com/googleapis/google-api-python-client
+    https://developers.google.com/resources/api-libraries/documentation/sheets/v4/python/latest/index.html
+
+Google Sheet API:
+    https://developers.google.com/sheets/api/guides/concepts
+
+    Set-up for Google Sheets: https://developers.google.com/sheets/api/quickstart/python
+
+    In the end you should get a credentials.json
+
+Google Google Workspace API: https://developers.google.com/drive/api/quickstart/python
+
+    $ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 """
 
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
@@ -29,7 +51,16 @@ from gsheets import Sheets
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
 TIMEZONE_STR = "Australia/Melbourne"
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
+try:
+    # this should work Python 3.9+
+    from zoneinfo import ZoneInfo
+
+    TIMEZONE = ZoneInfo(TIMEZONE_STR)
+except:
+    # otherwise fall back to pytz
+    import pytz
+
+    TIMEZONE = pytz.timezone(TIMEZONE_STR)
 
 
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
@@ -75,12 +106,12 @@ if __name__ == "__main__":
     csv_file = args.output
 
     # sheets = Sheets.from_files("~/client_secrets.json", "~/storage.json")
-    sheets = Sheets.from_files(
+    gg_sheets = Sheets.from_files(
         google_credentials, "storage.json", no_webserver=not args.webserver
     )
 
-    marking = sheets[spreadsheet_id].find(sheet_name)
+    sheet = gg_sheets[spreadsheet_id].find(sheet_name)
 
-    marking.to_csv(csv_file, encoding="utf-8", dialect="excel")
+    sheet.to_csv(csv_file, encoding="utf-8", dialect="excel")
 
     logging.info(f"Finished...")

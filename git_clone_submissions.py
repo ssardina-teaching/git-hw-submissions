@@ -7,10 +7,10 @@ output directory.
 
 It also produces a file submission_timestamp.csv with all timestamp of the tag for the successful repo cloned/updated.
 
-This script uses GitPython module to have Git API: 
+This script uses GitPython module to have Git API:
     https://gitpython.readthedocs.io/en/stable/tutorial.html
 
-A lot of tips on using GitPython: 
+A lot of tips on using GitPython:
     http://www.legendu.net/misc/blog/hands-on-GitPython/
 
 GitPython provides object model access to your git repository.
