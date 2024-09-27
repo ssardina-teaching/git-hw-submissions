@@ -203,6 +203,15 @@ To access [Google Workspaces](https://developers.google.com/workspace) resources
 
 For authentication to Google Workspaces one needs the the application configurations file from APIs Console. Check the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python) to obtain a `client_secret.json` (same as`credentials.json`) file for your project. PyDrive2 also explains how to get the file [here](https://docs.iterative.ai/PyDrive2/quickstart/#authentication).
 
+All access to Google API requires authentication; usually the workflow is as follows:
+
+* Go to the [Google API Access Panel](https://console.developers.google.com/apis/credentials).
+* Create a project.
+* Create an OAuth consent screen.
+* Create credentials of type "OAuth Client ID".
+* Download the JSON file of such credentials and name it `client_secrets.json`
+* Place the file in the same directory as the scripts.
+
 
 > [!TIP]
 > Read [Integrating Google Drive API with Python: A Step-by-Step Guide](https://medium.com/the-team-of-future-learning/integrating-google-drive-api-with-python-a-step-by-step-guide-7811fcd16c44).
