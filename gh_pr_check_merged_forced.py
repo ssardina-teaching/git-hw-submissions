@@ -138,12 +138,14 @@ if __name__ == "__main__":
 
     # Write merged_pr data to CSV file
     backup_file(CSV_MERGED)
+    merged_pr.sort()
     with open(CSV_MERGED, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["REPO_ID"])
         writer.writerows([[repo_id] for repo_id in merged_pr])
 
     backup_file(CSV_FORCED_PUSH)
+    forced_pr.sort()
     with open(CSV_FORCED_PUSH, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["REPO_ID"])
