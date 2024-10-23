@@ -70,8 +70,8 @@ $  python ./gh_classroom_collect.py -t ~/.ssh/keys/gh-token-ssardina.txt RMIT-CO
 Produce a CSV file with how many commits each author has done per repo. For example:
 
 ```shell
-$ python ./gh_authors_collect.py ~/.ssh/keys/github-token-ssardina.txt \
-    --tag submission repos.csv authors.csv
+$ python ./gh_authors_collect.py -t ~/.ssh/keys/github-token-ssardina.txt 
+    --tag submission -- repos.csv authors.csv
 ```
 
 The `--tag` option restricts to tags finishing in a given tag. If no tag is given, the whole repo is parsed to the head of `main`.
