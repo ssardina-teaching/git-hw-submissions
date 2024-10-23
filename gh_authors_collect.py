@@ -203,7 +203,6 @@ if __name__ == "__main__":
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
     parser.add_argument(
-        "--teams",
         "--repos",
         nargs="+",
         help="if given, only the teams specified will be parsed.",
@@ -225,7 +224,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.teams)
+    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
 
     if len(list_repos) == 0:
         logging.warning(
@@ -274,7 +273,7 @@ if __name__ == "__main__":
 
             next(csv_reader)  # skip header
             for row in csv_reader:
-                if args.teams is not None and row["REPO_ID"] not in args.teams:
+                if args.repos is not None and row["REPO_ID"] not in args.repos:
                     rows_to_csv.append(row)
     else:
         logging.info(
