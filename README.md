@@ -11,7 +11,8 @@ This repo contains useful scripts I developed over the years to support student'
     - [`gh_member_bulk_team.py`: add/delete GH username to GH teams](#gh_member_bulk_teampy-adddelete-gh-username-to-gh-teams)
     - [`gh_pr_merge.py`: bulk merge of PRs](#gh_pr_mergepy-bulk-merge-of-prs)
     - [`gh_pr_feedback_create.py`: create Feedback PRs](#gh_pr_feedback_createpy-create-feedback-prs)
-    - [`gh_pr_feedback_check_merged.py`: push comments to repo's PRs](#gh_pr_feedback_check_mergedpy-push-comments-to-repos-prs)
+    - [`gh_pr_check_merged_forced.py`: check for merged PR and forced pushes](#gh_pr_check_merged_forcedpy-check-for-merged-pr-and-forced-pushes)
+    - [`gh_pr_feedback_comment.py`: push comments to repo's PRs](#gh_pr_feedback_commentpy-push-comments-to-repos-prs)
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
@@ -130,13 +131,23 @@ Check which repos are missing an expected Feedback PR #1 from GitHub Classroom; 
 For example:
 
 ```shell
-$ python ./gh_pr_feedback_create.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv a7b3d7aee55d00d55ee29b8a505d17fc8283e9f8 |& tee pr_create.log
+$ python ./gh_pr_create.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv a7b3d7aee55d00d55ee29b8a505d17fc8283e9f8 |& tee pr_create.log
 ```
 
 Notice that the script needs the list of repos to consider ()`repos.csv`) and the base sha to create the Feedback branch and corresponding PR. Because the repos were created by GH Classroom, the first commit should have the same sha than the original staff template.
 
+### `gh_pr_check_merged_forced.py`: check for merged PR and forced pushes
 
-### `gh_pr_feedback_check_merged.py`: push comments to repo's PRs
+This script will check for PRs that have been merged and 
+
+```shell
+$ python ../git-hw-submissions.git/gh_pr_check_merged_forced.py  -t ~/.ssh/keys/gh-token-ssardina.txt   repos.csv
+```
+
+It will leave two CSV files `pr_merged.csv` and `pr_forced.csv` with the corresponding repos' ids.
+
+
+### `gh_pr_feedback_comment.py`: push comments to repo's PRs
 
 This tool will push feedback comments to PRs in GH repositories. This may be useful to provide feedback and results to students after automarking. It requires:
 
