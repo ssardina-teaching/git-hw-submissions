@@ -1,5 +1,7 @@
 """
-Check which repos have wrongly merged PR #1 for Feedback from GitHub Classroom
+Check which repos have wrongly merged PR and forced pushed reported in the PR
+
+This is useful to handle teh Feedeback PRs #1 from GitHub Classroom, where students are supposed to fix their code
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
@@ -12,10 +14,7 @@ Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
-import base64
 import csv
-import re
-import traceback
 import os
 
 from argparse import ArgumentParser
@@ -49,7 +48,15 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
 
-CSV_MERGED = "pr_merged.csv"
+CSV_MERGED = "pr_forced.csv"
+CSV_FORCED_PUSH = "pr_forced_push.csv"
+
+
+def backup_file(file_path: str):
+    if os.path.exists(file_path):
+        logging.info(f"Backing up {file_path}...")
+        time_now = util.get_time_now()
+        os.rename(file_path, f"{file_path}-{time_now}.bak")
 
 
 if __name__ == "__main__":
@@ -99,6 +106,7 @@ if __name__ == "__main__":
     no_merged = 0
     no_errors = 0
     merged_pr = []
+    forced_pr = []  # repos that have forced push
     for k, r in enumerate(list_repos):
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
@@ -111,19 +119,34 @@ if __name__ == "__main__":
             if pr_feedback.merged:
                 logging.info(f"\t PR Feedback merged!!! {pr_feedback}")
                 merged_pr.append(repo_id)
+
+            # check for forced push
+            for event in pr_feedback.get_issue_events():
+                if event.event == "head_ref_force_pushed":
+                    logging.warning(f"\t PR Feedback force pushed!!! {pr_feedback}")
+                    forced_pr.append(repo_id)
+                    break
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
 
     logging.info(
-        f"Finished! Total repos: {no_repos} - Merged wrongly: {len(merged_pr)} - Errors: {no_errors}."
+        f"Finished! Total repos: {no_repos} - Merged/foced wrongly: {len(merged_pr)}/{len(forced_pr)} - Errors: {no_errors}."
     )
     logging.info(f"Repos that closed the Feedback PR: \n\t {merged_pr}.")
+    logging.info(f"Repos that have forced push: \n\t {forced_pr}.")
 
     # Write merged_pr data to CSV file
+    backup_file(CSV_MERGED)
     with open(CSV_MERGED, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["REPO_ID"])
         writer.writerows([[repo_id] for repo_id in merged_pr])
+
+    backup_file(CSV_FORCED_PUSH)
+    with open(CSV_FORCED_PUSH, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["REPO_ID"])
+        writer.writerows([[repo_id] for repo_id in forced_pr])
 
     logging.info(f"Merged PR data written to {CSV_MERGED}.")
