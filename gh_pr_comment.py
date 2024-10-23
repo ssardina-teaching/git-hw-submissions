@@ -111,6 +111,12 @@ if __name__ == "__main__":
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument(
+        "--extension",
+        "-ext",
+        default="txt",
+        help="Extension of report file (Default: %(default)s).",
+    )
+    parser.add_argument(
         "--start",
         "-s",
         type=int,
@@ -240,10 +246,10 @@ if __name__ == "__main__":
             # create a new comment with the automarker report
             if not args.no_report:
                 file_report = os.path.join(
-                    args.REPORT_FOLDER, f"{repo_id}.txt"
+                    args.REPORT_FOLDER, f"{repo_id}.{args.extension}"
                 )  # default report filename
                 file_report_error = os.path.join(
-                    args.REPORT_FOLDER, f"{repo_id}_ERROR.txt"
+                    args.REPORT_FOLDER, f"{repo_id}_ERROR.{args.extension}"
                 )  # default report filename
                 if "REPORT" in marking_repo:
                     file_report = os.path.join(
@@ -276,7 +282,7 @@ if __name__ == "__main__":
                     with open(os.path.join(file_report), "r") as report:
                         report_text = report.read()
 
-                    message = f"# Full autograder report \n\n ```{report_text}```"
+                    message = f"# Full autograder report \n\n ```{args.extension}\n{report_text}```"
                     if error_text is not None:
                         message += f"\n**NOTE**: {error_text}"
                     message += f"\n{FEEDBACK_MESSAGE}"
