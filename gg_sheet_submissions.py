@@ -11,7 +11,9 @@ This is done using GSHEETS package: https://gsheets.readthedocs.io/en/stable/ind
 
 Example to download the MARKING sheet from the Google Sheet with ID 16wc.....:
 
-$ python git-hw-submissions.git/gg_get_worksheet.py 16wcDonn15ak88kCbOUGfyWimciD7zCSRLJdbVBP0uGs MARKING -c ~/.ssh/keys/credentials.json -o marking.csv
+$ python ~/git/courses/tools/git-hw-submissions.git/gg_sheet_submissions.py -c ~/.ssh/keys/credentials.json \
+    1L69aPjMKa7rx1gtQYJXAs2V0TG71-cVZzL0dSpNFXGQ MATH24 submissions \
+    --column-id D --column-file J
 
 
 ====================================================
@@ -132,7 +134,7 @@ if __name__ == "__main__":
     sheet_name = args.SHEET
     google_credentials = args.credentials
     csv_file = args.csv
-    output_dir = args.output
+    output_dir = args.OUTPUT
 
     # check output path exists
     if os.path.exists(output_dir):
