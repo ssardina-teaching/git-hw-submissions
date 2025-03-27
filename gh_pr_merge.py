@@ -42,7 +42,7 @@ coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
-GH_URL_PREFIX = "https://github.com/"
+GH_URL_PREFIX = "https://github.com"
 
 
 if __name__ == "__main__":
@@ -52,6 +52,7 @@ if __name__ == "__main__":
         "--repos", nargs="+", help="if given, only the teams specified will be parsed."
     )
     parser.add_argument("--start", type=int, help="repo no to start processing from.")
+    parser.add_argument("--end", type=int, help="repo no to end processing.")
     parser.add_argument("--no", type=int, help="number of the PR to merge.")
     parser.add_argument("--title", help="title of PR to merge.")
     parser.add_argument(
@@ -76,6 +77,8 @@ if __name__ == "__main__":
             f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.'
         )
         exit(0)
+    if args.end is not None and args.end < len(list_repos):
+        list_repos = list_repos[: args.end]
 
     ###############################################
     # Authenticate to GitHub
@@ -85,9 +88,9 @@ if __name__ == "__main__":
         exit(1)
     try:
         g = util.open_gitHub(token_file=args.token_file)
-    except:
+    except Exception as e:
         logging.error(
-            "Something wrong happened during GitHub authentication. Check credentials."
+            f"Something wrong happened during GitHub authentication. Check credentials. Exception: {e}"
         )
         exit(1)
 
@@ -98,46 +101,46 @@ if __name__ == "__main__":
     no_repos = len(list_repos)
     no_merged = 0
     no_errors = 0
-    for k, r in enumerate(list_repos):
+    for k, r in enumerate(list_repos, start=1):
         if args.start is not None and k < args.start:
             continue
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"https://github.com/{repo_name}"
+        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 
         repo = g.get_repo(repo_name)
-        prs = repo.get_pulls()
+        prs = repo.get_pulls(state="all", direction="desc")
 
-        pr_sync = None
+        pr_selected = None
         if args.no is not None:
             if prs.totalCount < args.no:
-                logging.warning(
+                logging.error(
                     f"\t No PR with number {args.no} - Repo has only {prs.totalCount} PRs."
                 )
-                continue
+                exit(1)
             else:
-                pr_sync = repo.get_pull(args.no)
+                pr_selected = repo.get_pull(args.no)
         else:
             for pr in prs:
                 if args.title in pr.title:
-                    pr_sync = pr
+                    pr_selected = pr
                     break
-            if pr_sync is None:
+            if pr_selected is None:
                 logging.warning(f"\t No PR containing '{args.title}' in title.")
                 continue
 
-        logging.info(f"\t Found relevant PR: {pr_sync}")
+        logging.info(f"\t Found relevant PR: {pr_selected}")
 
-        if pr_sync.merged:
+        if pr_selected.merged:
             logging.info("\t PR already merged.")
             continue
 
-        logging.info(f"\t PR is still not merged - will try to merge it: {pr_sync}")
+        logging.info(f"\t PR is still not merged - will try to merge it: {pr_selected}")
         try:
-            status = pr_sync.merge(merge_method="merge")
+            status = pr_selected.merge(merge_method="merge")
             if status.merged:
-                logging.info(f"\t Successful merging...")
+                logging.info("\t Successful merging...")
                 no_merged += 1
             else:
                 logging.error(f"\t MERGING DIDN'T WORK - STATUS: {status}")
