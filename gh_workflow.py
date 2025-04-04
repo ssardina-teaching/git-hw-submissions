@@ -1,14 +1,16 @@
 """
-Check which repos have wrongly merged PR or forced pushed reported in the PR
-
-This is useful to handle teh Feedeback PRs #1 from GitHub Classroom, where students are supposed to fix their code
+Script to manage automarking/feedback workflows, like the ones used in GH Classroom
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
     python3 -m pip install PyGithub
 
 PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
-Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in-python
+
+Library uses REST API: https://docs.github.com/en/rest
+
+Some usage help on PyGithub:
+    https://www.thepythoncode.com/article/using-github-api-in-python
 """
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024-2025"
@@ -18,7 +20,6 @@ import os
 
 from argparse import ArgumentParser
 import util
-from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
@@ -48,8 +49,7 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com"
 
-CSV_MERGED = "pr_merged.csv"
-CSV_FORCED_PUSH = "pr_forced_push.csv"
+CSV_OUTPUT = "workflows.csv"
 
 
 def backup_file(file_path: str):
@@ -60,7 +60,7 @@ def backup_file(file_path: str):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Merge PRs in multiple repos")
+    parser = ArgumentParser(description="Start automarking workflows")
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument(
         "--repos", nargs="+", help="if given, only the teams specified will be parsed."
@@ -70,15 +70,17 @@ if __name__ == "__main__":
         "--token-file",
         help="File containing GitHub authorization token/password.",
     )
-    parser.add_argument("--no", type=int, help="number of the PR to merge.")
-    parser.add_argument("--title", help="title of PR to merge.")
+    parser.add_argument("--name", help="title of workflow to start.")
+    parser.add_argument("--commit",
+                        default="main",
+                        help="commit or branch to execute it on %(default)s.")
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
     logging.info(f"Starting on {TIMEZONE}: {now}\n")
 
-    if args.no is None and args.title is None:
-        logging.error("You must provide a PR number or title to merge.")
+    if args.name is None:
+        logging.error("You must provide a name for the workflow to run.")
         exit(1)
 
     # Get the list of TEAM + GIT REPO links from csv file
@@ -109,78 +111,54 @@ if __name__ == "__main__":
     ###############################################
     authors_stats = []
     no_repos = len(list_repos)
-    no_merged = 0
+    workflows_csv = []
     no_errors = 0
-    merged_pr = []
-    forced_pr = []  # repos that have forced push
     for k, r in enumerate(list_repos, start=1):
         row = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {row} ({repo_url})...")
 
-        repo = g.get_repo(repo_name)
-        prs = repo.get_pulls(state="all", direction="desc")
-
-        pr_selected = None
         try:
-            if args.no is not None:
-                if prs.totalCount < args.no:
-                    logging.error(
-                        f"\t No PR with number {args.no} - Repo has only {prs.totalCount} PRs."
+            repo = g.get_repo(repo_name)
+            workflows = repo.get_workflows()
+
+            workflow_selected = None
+            for w in workflows:
+                if w.name in args.name:
+                    logging.info(
+                        f"\t Found workflow ({w}) - Starting it on commit {args.commit}"
                     )
-                    exit(1)
-                else:
-                    pr_selected = repo.get_pull(args.no)
-            else:
-                for pr in prs:
-                    logging.debug(f"\t PR: {pr.number} - {pr.title}")
-                    if args.title in pr.title:
-                        pr_selected = pr
-                        break
-                if pr_selected is None:
-                    logging.warning(f"\t No PR containing '{args.title}' in title.")
-                    continue
-            logging.info(f"\t Found relevant PR: {pr_selected}")
-
-            if pr_selected.merged:
-                pr_url = f"{repo_url}/pull/{pr_selected.number}"
-                logging.warning(f"\t PR Feedback merged!!! {pr_selected} - URL: {pr_url}")
-                merged_pr.append([row, repo_name, pr_url])
-
-            # check for forced push
-            for event in pr_selected.get_issue_events():
-                if event.event == "head_ref_force_pushed":
-                    pr_url = f"{repo_url}/pull/{pr_selected.number}"
-                    logging.warning(f"\t PR Feedback forcec pushed!!! {pr_selected} - actor: {event.actor} - URL: {pr_url}")
-                    forced_pr.append([row, repo_name, pr_url])
+                    workflow_selected = w
                     break
+
+            result = None
+            if workflow_selected:
+                result = workflow_selected.create_dispatch(args.commit)
+                if not result:
+                    logging.error(
+                        f"\t Workflow {workflow_selected.name} failed to start."
+                    )
+                    no_errors += 1
+            else:
+                logging.info(
+                            f"\t Workflow {w.name} not found in repo {repo_name} - {repo_url}."
+                        )
+                no_errors += 1
+            workflows_csv.append([row, repo_name, repo_url, result])
         except GithubException as e:
             logging.error(f"\t Error in repo {repo_name}: {e}")
             no_errors += 1
 
-    logging.info(
-        f"Finished! Total repos: {no_repos} - Merged/forced wrongly: {len(merged_pr)}/{len(forced_pr)} - Errors: {no_errors}."
-    )
+    logging.info(f"Finished! Total repos: {no_repos} - Errors: {no_errors}")
 
-    # Finally, write data to CSV file
-    logging.info(f"Repos that closed the Feedback PR: \n\t {merged_pr}.")
-    backup_file(CSV_MERGED)
-    merged_pr.sort()
-    with open(CSV_MERGED, "w", newline="") as file:
+    workflows_csv.sort()
+    with open(CSV_OUTPUT, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "PR_URL"])
-        writer.writerows([row for row in merged_pr])
+        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT"])
+        writer.writerows([row for row in workflows_csv])
 
-    logging.info(f"Repos that have forced push: \n\t {forced_pr}.")
-    backup_file(CSV_FORCED_PUSH)
-    forced_pr.sort()
-    with open(CSV_FORCED_PUSH, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "PR_URL"])
-        writer.writerows([row for row in merged_pr])
+    for row in workflows_csv:
+        print(row)
 
-    for row in forced_pr:
-        print(row[2])
-
-    logging.info(f"Merged PR data written to {CSV_MERGED}.")
+    logging.info(f"Workflow results data written to {CSV_OUTPUT}.")

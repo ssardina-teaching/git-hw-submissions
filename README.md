@@ -16,12 +16,12 @@ This repo contains useful scripts I developed over the years to support student'
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
+    - [`gh_workflow.py`: run automarking workflow](#gh_workflowpy-run-automarking-workflow)
   - [Google Tools](#google-tools)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
     - [`gg_sheet_submissions.py`: download submissions from Google Sheets](#gg_sheet_submissionspy-download-submissions-from-google-sheets)
     - [`gg_drive_download.py`: download files in Drive folder](#gg_drive_downloadpy-download-files-in-drive-folder)
   - [Some useful commands](#some-useful-commands)
-
 
 ## Setup
 
@@ -42,14 +42,13 @@ The libraries used are:
 
 These `gh_xxx.py` scripts mostly use [PyGithub](https://github.com/PyGithub/PyGithub). Scripts will require a GitHub access token that allows access the corresponding repos/organization.
 
-* `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment (using the prefix name of the project).
-* `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHub repositories. This can be used to do analysis of student contributions
-* `gh_member_bulk_team.py`: add/delete GH username to a list of teams in an organization (e.g., to add tutors to groups so they can see student repos).
-* `gh_pr_feedback_check_merged.py`: check if a GH Classroom Feedback PRs have been (wrongly) merged in each repo.
-* `gh_pr_feedback_comment.py`: push feedback marking to repos' Feedback PRs.
+- `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment (using the prefix name of the project).
+- `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHub repositories. This can be used to do analysis of student contributions
+- `gh_member_bulk_team.py`: add/delete GH username to a list of teams in an organization (e.g., to add tutors to groups so they can see student repos).
+- `gh_pr_feedback_check_merged.py`: check if a GH Classroom Feedback PRs have been (wrongly) merged in each repo.
+- `gh_pr_feedback_comment.py`: push feedback marking to repos' Feedback PRs.
 
 Another tool that one can consider is [gh API CLI](https://github.com/cli/cli) tool; see the [manual](https://cli.github.com/manual/).
-
 
 ### `gh_classroom_collect.py`: collect repos from a GH Organizations
 
@@ -63,7 +62,6 @@ $  python ./gh_classroom_collect.py -t ~/.ssh/keys/gh-token-ssardina.txt RMIT-CO
 
 > [!NOTE]
 > The CSV `repo.csv` file will be used for many later tasks, including cloning the repos locally using script `git_clone_submissions.py`, extracting collaborators, etc.
-
 
 ### `gh_authors_collect.py`: extract commits per author
 
@@ -85,7 +83,6 @@ $ python ./gh_create_wiki.py repos.csv ./wiki-template
 ```
 
 See [wiki-template](wiki-template/) for an example of a Wiki template.
-
 
 ### `gh_member_bulk_team.py`: add/delete GH username to GH teams
 
@@ -146,7 +143,6 @@ $ python ../git-hw-submissions.git/gh_pr_check_merged_forced.py  -t ~/.ssh/keys/
 
 It will leave two CSV files `pr_merged.csv` and `pr_forced.csv` with the corresponding repos' ids.
 
-
 ### `gh_pr_feedback_comment.py`: push comments to repo's PRs
 
 This tool will push feedback comments to PRs in GH repositories. This may be useful to provide feedback and results to students after automarking. It requires:
@@ -170,15 +166,13 @@ Use `--repos ssardina juan` to restrict to the three repos, and `--dry-run` to s
 $ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --dry-run
 ```
 
-
 ## Git Tools
 
 These tools use [GitPython](https://gitpython.readthedocs.io/en/stable/tutorial.html) module to have Git API in Python.
 
-* `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
-* `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
-* `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
-
+- `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
+- `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
+- `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
 
 ### `git_clone_submissions.py`: batch git cloning
 
@@ -186,8 +180,8 @@ This tool clones a set of student/team repositories listed in a CSV file at a gi
 
 If a repository already exists, it will be _updated_ automatically:
 
-* if the tag changed to a different commit, the new commit will be pulled;
-* if the repo does not have the tag anymore (the student has withdraw the submission), the local copy will be removed from disk.
+- if the tag changed to a different commit, the new commit will be pulled;
+- if the repo does not have the tag anymore (the student has withdraw the submission), the local copy will be removed from disk.
 
 At the end, the script produces a CSV file with the information of each repo successfully cloned, including commit id (`commit`), time of the commit (`submitted_at`), and time of the tagging (`tagged_at`).
 
@@ -203,10 +197,15 @@ To just clone the last commit in the master branch, use `main` as the tag.
 
 The timezone used is defined by constant `TIMEZONE` in the script (defaults to `Australia/Melbourne` time zone).
 
-
 ### `git_batch_commit.sh`: bulk commit and push to repos
 
 This script allows to commit and push changes to a collection of repos that already exist in a folder. This is useful to make edits to students' repos after they have been created.
+
+### `gh_workflow.py`: run automarking workflow
+
+This script will start the automarking workflows in the repository of students, which in term should be "connected" to the GitHub Classroom.
+
+In this way, we can decide when the workflow should run, rather than in each push (which will consume all the budget quickly!)
 
 ## Google Tools
 
@@ -216,13 +215,12 @@ For authentication to Google Workspaces one needs the the application configurat
 
 All access to Google API requires authentication; usually the workflow is as follows:
 
-* Go to the [Google API Access Panel](https://console.developers.google.com/apis/credentials).
-* Create a project.
-* Create an OAuth consent screen.
-* Create credentials of type "OAuth Client ID".
-* Download the JSON file of such credentials and name it `client_secrets.json`
-* Place the file in the same directory as the scripts.
-
+- Go to the [Google API Access Panel](https://console.developers.google.com/apis/credentials).
+- Create a project.
+- Create an OAuth consent screen.
+- Create credentials of type "OAuth Client ID".
+- Download the JSON file of such credentials and name it `client_secrets.json`
+- Place the file in the same directory as the scripts.
 
 > [!TIP]
 > Read [Integrating Google Drive API with Python: A Step-by-Step Guide](https://medium.com/the-team-of-future-learning/integrating-google-drive-api-with-python-a-step-by-step-guide-7811fcd16c44).
@@ -233,7 +231,6 @@ All access to Google API requires authentication; usually the workflow is as fol
 > - [Google Drive API](https://developers.google.com/drive/api/guides/about-sdk) access:
 >   - [PyDrive2](https://docs.iterative.ai/PyDrive2/) package for more abstract access to the .
 > - [Google Forms API](https://developers.google.com/forms/api/guides):
-
 
 ### `gg_get_worksheet.py`: download Google Sheet worksheet as CSV file
 
