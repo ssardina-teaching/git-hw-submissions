@@ -5,7 +5,7 @@ NO_ARGS=$#   # Get the number of arguments passed in the command lin
 ME=`basename "$0"`
 
 if [ "$NO_ARGS" -lt 1 ]; then
-  echo -e "USAGE: ./$ME <folder wirh repos>"
+  echo -e "USAGE: ./$ME <folder with repos>"
   exit
 fi
 
@@ -27,24 +27,26 @@ IFS=$(echo -en "\n\b")
 #########################
 # HERE GOES THE SCRIPT
 #########################
+COUNTER=0
 for dir in $(ls -d $1/*) ; do
 
     # continue if not a directory
   	[ ! -d "$dir" ] && continue
 
-    echo "=================> Processing "$dir""
-
-    git -C "$dir" pull
+    let COUNTER++
+    echo "=================> Processing folder $COUNTER: "$dir""
+    git -C "$dir" pull  # first update repo
 
     ######################################################
     # HERE IS WHERE WE DO THE CHANGES TO THE REPO IN $d/
     ######################################################
     # Get into student repo, add, commit and push
 
-    #sed -i -e "s/question8/question6/g" $d/analysis.py
+    # Replace automarking github
+    rm -rf $dir/.github
+    cp -a ./workshop-2-template.git/.github/ $dir/
 
-    cp ../../lp-exercises.git/prolog/prolog-project-agtcity/README.md $dir/
-    MESSAGE="Updated readme spec"
+    MESSAGE="Upgrade automarking workflow with new GH system"
 
     ## Copy good files into student repo
     # cp pacman-p1-search.git/pacman.py $dir/
@@ -59,8 +61,9 @@ for dir in $(ls -d $1/*) ; do
     git -C $dir commit -m $MESSAGE
     git -C $dir push
 
-    # Get out of student repo (ready to process next)
+    # Wait a bit to not be pushed out....
     echo
+    sleep 3
 done;
 
 # restore $IFS
