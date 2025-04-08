@@ -64,10 +64,7 @@ for dir in $(ls -d $1/*) ; do
     # Wait a bit to not be pushed out....
     echo
     sleep 3
-done;
+done
 
 # restore $IFS
 IFS=$SAVEIFS
-
-
-
