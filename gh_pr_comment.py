@@ -54,6 +54,7 @@ GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "pr_comment_errors.csv"
 
+SLEEP_RATE = 10  # number of repos to process before sleeping
 SLEEP_TIME = 5  # sleep time in seconds between API calls
 
 
@@ -155,15 +156,12 @@ if __name__ == "__main__":
 
     # Get the list of relevant repos from the CSV file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
-    start_no = 1
+    start_no = 0
     end_no = len(list_repos)
     if args.repos is None:
-        start_no = args.start if args.start is not None else 0
-        end_no = args.end if args.end is not None else len(list_repos)
-        print(start_no, end_no)
-        list_repos = list_repos[start_no - 1 : end_no]
-
-    logger.info(args)
+        start_no = args.start - 1
+        end_no = (args.end if args.end is not None else len(list_repos))
+        list_repos = list_repos[start_no : end_no]
 
     if len(list_repos) == 0:
         logger.error(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
@@ -191,8 +189,8 @@ if __name__ == "__main__":
     authors_stats = []
     no_repos = len(list_repos)
     errors = []
-    for k, r in enumerate(list_repos):
-        if k % 10 == 0 and k > 0:
+    for k, r in enumerate(list_repos, start=start_no+1):
+        if k % SLEEP_RATE == 0 and k > 0:
             logger.info(f"Sleep for {SLEEP_TIME} seconds...")
             time.sleep(SLEEP_TIME)
 
@@ -201,7 +199,7 @@ if __name__ == "__main__":
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
         logger.info(
-            f"Processing repo {k+start_no}/{end_no}: {repo_id} - {repo_url}/pull/1"
+            f"Processing repo {k}/{end_no}: {repo_id} - {repo_url}/pull/1"
         )
         if repo_id not in marking_dict:
             logger.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
