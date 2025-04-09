@@ -5,6 +5,7 @@ This repo contains useful scripts I developed over the years to support student'
 - [Teaching scripts](#teaching-scripts)
   - [Setup](#setup)
   - [GitHub \& GitHub Classrooms](#github--github-classrooms)
+    - [Manual testing at development](#manual-testing-at-development)
     - [`gh_classroom_collect.py`: collect repos from a GH Organizations](#gh_classroom_collectpy-collect-repos-from-a-gh-organizations)
     - [`gh_authors_collect.py`: extract commits per author](#gh_authors_collectpy-extract-commits-per-author)
     - [`gh_create_wiki.py`: push Wiki template to list of repos](#gh_create_wikipy-push-wiki-template-to-list-of-repos)
@@ -42,13 +43,19 @@ The libraries used are:
 
 These `gh_xxx.py` scripts mostly use [PyGithub](https://github.com/PyGithub/PyGithub). Scripts will require a GitHub access token that allows access the corresponding repos/organization.
 
-- `gh_classroom_collect.py`: will collect all repos in a given GitHub Classroom/Organization for a given assignment (using the prefix name of the project).
-- `gh_authors_collect.py`: extract the number of commits per each author in a set of GitHub repositories. This can be used to do analysis of student contributions
-- `gh_member_bulk_team.py`: add/delete GH username to a list of teams in an organization (e.g., to add tutors to groups so they can see student repos).
-- `gh_pr_feedback_check_merged.py`: check if a GH Classroom Feedback PRs have been (wrongly) merged in each repo.
-- `gh_pr_feedback_comment.py`: push feedback marking to repos' Feedback PRs.
-
 Another tool that one can consider is [gh API CLI](https://github.com/cli/cli) tool; see the [manual](https://cli.github.com/manual/).
+
+### Manual testing at development
+
+We can run interactively first at development time; for example:
+
+```shell
+>>> import util
+>>> g = util.open_gitHub(token_file="/home/ssardina/.ssh/keys/gh-token-ssardina.txt")
+>>> repo = g.get_repo("RMIT-COSC2780-2973-IDM25/workshop-5-ssardina")
+>>> ws = repo.get_workflows()
+>>> ws[0].create_dispatch(ref="main")
+```
 
 ### `gh_classroom_collect.py`: collect repos from a GH Organizations
 
