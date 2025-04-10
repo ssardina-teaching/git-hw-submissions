@@ -16,7 +16,7 @@ CSV_REPO_GIT = "REPO_URL"
 CSV_REPO_ID = "REPO_ID"
 
 
-def get_repos_from_csv(csv_file, repos_ids=None):
+def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
     """
     Collect list of teams with their git URL links from a CSV file.
     Case insensitive search for the repo ids.
@@ -29,8 +29,11 @@ def get_repos_from_csv(csv_file, repos_ids=None):
 
     # Get the list of ALL teams with their GIT URL from the CSV file
     with open(csv_file, "r") as f:
-        teams_reader = csv.DictReader(f, delimiter=",")
-        repos = list(teams_reader)
+        repos = list(csv.DictReader(f, delimiter=","))
+
+    # Add enumeration as new field NO
+    for i, t in enumerate(repos):
+        t["NO"] = i + 1
 
     # If specific team ids given, just keep those them only
     if repos_ids is not None:
