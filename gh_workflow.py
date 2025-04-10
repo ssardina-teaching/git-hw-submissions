@@ -86,7 +86,13 @@ if __name__ == "__main__":
         default=1,
         help="repo no to start processing from (Default: %(default)s).",
     )
-    parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
+    parser.add_argument("--end", 
+        "-e", type=int, 
+        help="repo no to end processing.")
+    parser.add_argument("--remark", 
+        default=False,
+        action="store_true",
+        help="Remark even if commit was already marked (Default: %(deafault)s).")
     args = parser.parse_args()
 
     now = datetime.now(TIMEZONE).isoformat()
@@ -163,6 +169,13 @@ if __name__ == "__main__":
                     continue
                 commit = commits[0].sha # last commit before until_dt
                 logger.debug(f"\t Commit SHA to run workflow: {commit} - {commits[0].commit.author.date.astimezone(until_dt.tzinfo).isoformat()}")
+                
+            # check the commit has not been marked already
+            if not args.remark:
+                commit_statuses = repo.get_commit(commit).get_statuses()
+                if commit_statuses is not None and commit_statuses.totalCount > 0:
+                    logger.info(f"\t Already marked with state: {commit_statuses[0].state}")
+                    continue
 
             # get all workshops and find the one we are looking for (contains args.name)
             workflows = repo.get_workflows()
@@ -177,7 +190,7 @@ if __name__ == "__main__":
             if workflow_selected is None:
                 logger.info(f"\t Workflow *{args.name}* not in {repo_name} - {repo_url}.")
                 continue
-
+            
             # we found the workflow, now run it on commit sha   !
             result = None
             if workflow_selected is not None:
