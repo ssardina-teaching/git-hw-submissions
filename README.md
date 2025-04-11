@@ -167,10 +167,10 @@ Now push all feedback to their pull requests from fist row (1) to row 5:
 $ python ./gh_pr_feedback_comment.py repos.csv marking.csv reports config_report_p2.py -t ~/.ssh/keys/gh-token-ssardina.txt  -s 1 -e 5 |& tee -a pr_feedback_0-10.log
 ```
 
-Use `--repos ssardina juan` to restrict to the three repos, and `--dry-run` to send feedback to console instead of repos:
+Use `--repos ssardina juan` to restrict to the three repos, and `--ghu` to define the column name containing the repo owner, and `--dry-run` to send feedback to console instead of repos:
 
 ```shell
-$ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --dry-run
+$ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID --dry-run
 ```
 
 ## Git Tools
@@ -210,9 +210,28 @@ This script allows to commit and push changes to a collection of repos that alre
 
 ### `gh_workflow.py`: run automarking workflow
 
-This script will start the automarking workflows in the repository of students, which in term should be "connected" to the GitHub Classroom.
+This script can do several operations on workflows:
 
-In this way, we can decide when the workflow should run, rather than in each push (which will consume all the budget quickly!)
+1. Start a run of a workflow (create a dispatch) in the repository of students. This is usually an automarking workflow that is connected and reports to GitHub Classroom.
+    - In this way, we can decide when the workflow should run, rather than in each push (which will consume all the budget quickly!)
+2. Extract the URL to the HTML page of a job for a run of a workshop. This URL would be the automarker report in the repo (showing the automarking process and table of results).
+    - Note this URL is still accessible even if the actions are disabled.
+3. Delete workflow runs.
+
+Examples:
+
+```shell
+# start dispatching workflows with name "Autograding" on the last commit before a date
+$ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --until 2025-04-08T12:00 --run-name "Automarking up April 8 12pm" -- start repos.csv |& tee -a autograde-2025-04-08T1200.log
+
+# get all the HTML URL to workflow job reports
+$ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --run-name "Autograding Test" -repos baoly19,anurag060197,minhphamhuy -- jobs repos.csv                    
+
+# delete all worflow runs after April 8, 2025 - 12pm
+$ python gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --until 2025-04-08T12:00 --repos ssardina -- delete repos.csv
+```
+
+
 
 ## Google Tools
 
