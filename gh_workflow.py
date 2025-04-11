@@ -22,7 +22,7 @@ import time
 import util
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
-from github import Github, Repository, Organization, GithubException
+from github import Github, Repository, Organization, GithubException, Workflow
 
 # get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
 TIMEZONE_STR = "Australia/Melbourne"  # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
@@ -53,7 +53,8 @@ CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com"
 
-CSV_OUTPUT = f"workflows-{NOW_TXT}.csv"
+START_CSV = f"workflows-start-{NOW_TXT}.csv"
+JOBS_CSV = f"workflows-jobs-{NOW_TXT}.csv"
 
 SLEEP_RATE = 10  # number of repos to process before sleeping
 SLEEP_TIME = 5  # sleep time in seconds between API calls
@@ -78,8 +79,8 @@ def start_workflow(
     API for Workflows: https://pygithub.readthedocs.io/en/latest/github_objects/Workflow.html
 
     Args:
-        list_repos (list): list of repos to process
-        name (str): name of the workflow to run
+        repos (list): list of repos to process
+        wrk_name (str): name of the workflow to run
         commit (str): commit or branch to run the workflow on
         until_dt (datetime): last commit before this date
         start_no (int): starting repo number to process
@@ -87,7 +88,7 @@ def start_workflow(
         run_name (str, optional): name of the run.
     """
     no_repos = len(repos)
-    workflows_csv = []
+    output_csv = []
     no_errors = 0
     for k, r in enumerate(repos, start=1):
         if k % SLEEP_RATE == 0 and k > 0:
@@ -113,10 +114,16 @@ def start_workflow(
                     logger.info(f"\t No commits found before {until_dt.isoformat()}.")
                     continue
                 commit = commits[0]  # last commit before until_dt
+            else:
+                # get the actual commit object (because commit may be just "main")
+                commit = repo.get_commit(commit)
 
-            commit_sha = commit.sha[:7]
-            commit_date = commit.commit.author.date.astimezone(until_dt.tzinfo).isoformat()
-            logger.debug(f"\t Commit SHA to run workflow: {commit_sha} - {commit_date}")
+            commit_sha = commit.sha
+            commit_sha_sort = commit_sha[:7]
+            commit_date = commit.commit.author.date.astimezone(until_dt.tzinfo if until_dt else TIMEZONE).isoformat()
+            logger.debug(
+                f"\t Commit SHA to run workflow: {commit_sha_sort} - {commit_date}"
+            )
 
             # check the commit has not been marked already
             if not args.remark:
@@ -125,7 +132,7 @@ def start_workflow(
                     logger.info(
                         f"\t Already marked with state: {commit_statuses[0].state}"
                     )
-                    workflows_csv.append(
+                    output_csv.append(
                         [repo_id, repo_name, repo_url, "already_marked", "", ""]
                     )
                     continue
@@ -136,7 +143,7 @@ def start_workflow(
             for w in workflows:
                 if  wrk_name in w.name:
                     logger.info(
-                        f"\t Found workflow ({w}) - Dispatch it on commit {commit_sha} - {commit_date}"
+                        f"\t Found workflow ({w}) - Dispatch it on commit {commit_sha_sort} - {commit_date}"
                     )
                     workflow_selected = w
                     break
@@ -146,7 +153,7 @@ def start_workflow(
                     f"\t Workflow *{wrk_name}* not in {repo_name} - {repo_url}."
                 )
                 no_errors += 1
-                workflows_csv.append([repo_id, repo_name, repo_url, "missing_workflow", "", ""])
+                output_csv.append([repo_id, repo_name, repo_url, "missing_workflow", "", ""])
                 continue
 
             # we found the workflow, now run it on commit sha   !
@@ -159,10 +166,9 @@ def start_workflow(
                     inputs["branch_ref"] = commit_sha
                 if run_name is not None:
                     inputs["run_name"] = run_name
-                result = True
 
-                # we run the workflow on head of main; but the inputs have the sha that needs to be marked ;-) cool eh?
-                # result = workflow_selected.create_dispatch(ref="main", inputs=inputs)
+                # RUN the workflow on head of main; but the inputs have the sha that needs to be marked ;-) cool eh?
+                result = workflow_selected.create_dispatch(ref="main", inputs=inputs)
                 if not result:
                     logger.error(
                         f"\t Workflow *{workflow_selected.name}* failed to start."
@@ -170,31 +176,138 @@ def start_workflow(
                     no_errors += 1
             else:
                 no_errors += 1
-            workflows_csv.append([repo_id, repo_name, repo_url, result, commit_sha, commit_date])
+            output_csv.append(
+                [repo_id, repo_name, repo_url, result, commit_sha_sort, commit_date]
+            )
         except GithubException as e:
             logger.error(f"\t Error in repo {repo_name}: {e}")
-            workflows_csv.append([repo_id, repo_name, repo_url, "exception", "", ""])
+            output_csv.append([repo_id, repo_name, repo_url, "exception", "", ""])
             no_errors += 1
 
     logger.info(f"Finished! No of repos processed: {no_repos} - Errors: {no_errors}")
 
-    workflows_csv.sort()
-    with open(CSV_OUTPUT, "w", newline="") as file:
+    output_csv.sort()
+    with open(START_CSV, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT"])
-        writer.writerows([row for row in workflows_csv])
+        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
+        writer.writerows([row for row in output_csv])
 
-    for repo_id in workflows_csv:
+    for repo_id in output_csv:
         print(repo_id)
 
-    logger.info(f"Workflow results data written to {CSV_OUTPUT}.")
+    logger.info(f"Workflow results data written to {START_CSV}.")
+
+
+def get_jobs(
+    repos: list,
+    wrk_name: str,
+    run_name: str = None,
+):
+    """Collect the HTML URL links for jobs run
+
+        API for Workflows: https://pygithub.readthedocs.io/en/latest/github_objects/Workflow.html
+
+    >>> repo = g.get_repo("RMIT-COSC2780-2973-IDM25/workshop-5-ghen")
+    >>> wrs = repo.get_workflow_runs()
+    >>> wrs[0].jobs()[0].__dict__.keys()
+    dict_keys(['_requester', '_check_run_url', '_completed_at', '_conclusion', '_created_at', '_head_branch', '_head_sha', '_html_url', '_id', '_labels', '_name', '_node_id', '_run_attempt', '_run_id', '_run_url', '_runner_group_id', '_runner_group_name', '_runner_id', '_runner_name', '_started_at', '_status', '_steps', '_url', '_workflow_name', '_headers', '_rawData', '_CompletableGithubObject__completed'])
+    >>> wrs[0].jobs()[0].html_url
+    'https://github.com/RMIT-COSC2780-2973-IDM25/workshop-5-ghen/actions/runs/14393599639/job/40365263779'
+
+    Args:
+        repos (list): list of repos to process
+        wrk_name (str): name of the workflow to run
+        run_name (str, optional): name of the run.
+    """
+    no_repos = len(repos)
+    output_csv = []
+    no_errors = 0
+    for k, r in enumerate(repos, start=1):
+        if k % SLEEP_RATE == 0 and k > 0:
+            logger.info(f"Sleep for {SLEEP_TIME} seconds...")
+            time.sleep(SLEEP_TIME)
+
+        # get the current repo data
+        repo_no = r["NO"]
+        repo_id = r["REPO_ID"]
+        repo_name = r["REPO_NAME"]
+        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        logger.info(
+            f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
+        )
+
+        try:
+            repo = g.get_repo(repo_name)
+
+            # first we get the workflow we are after
+            wrkflow : Workflow = None
+            for w in repo.get_workflows():
+                if wrk_name in w.name:
+                    wrkflow = w
+                    logger.info(f"\t Found workflow ({w})")
+                    break
+
+            if wrkflow is None:
+                logger.info(f"\t Workflow *{wrk_name}* not in {repo_name}.")
+                no_errors += 1
+                output_csv.append(
+                    [repo_id, repo_name, repo_url, "missing_workflow", ""]
+                )
+                continue
+
+            # second, we get the worfklow RUN that we want
+            wrkflow_runs = wrkflow.get_runs()
+            wrkflow_run = None
+            if run_name is not None:
+                wrkflow_run = next(
+                    (x for x in wrkflow_runs if run_name in x.name),
+                    None,
+                )
+            else:
+                wrkflow_run = wrkflow_runs[0] if wrkflow_runs.totalCount > 0 else None
+            if wrkflow_run is None:
+                logger.info(f"\t No workflow runs found for workflow {wrkflow.name}.")
+                no_errors += 1
+                output_csv.append(
+                    [repo_id, repo_name, repo_url, "no_workflow_runs", ""]
+                )
+                continue
+
+            # third we get its FIRST job (we know here there is one at least!)
+            wrkflow_job_name = wrkflow_run.jobs()[0].name
+            wrkflow_job_html = wrkflow_run.jobs()[0].html_url
+            wrkflow_job_date = wrkflow_run.run_started_at.astimezone(TIMEZONE)
+
+            logger.info(
+                f"\t Found workflow run log: {wrkflow_job_name} - {wrkflow_job_date} - {wrkflow_job_html}"
+            )
+            output_csv.append(
+                [repo_id, repo_name, repo_url, wrkflow_job_name, wrkflow_job_html]
+            )
+        except GithubException as e:
+            logger.error(f"\t Error in repo {repo_name}: {e}")
+            output_csv.append([repo_id, repo_name, repo_url, "exception", ""])
+            no_errors += 1
+
+    logger.info(f"Finished! No of repos processed: {no_repos} - Errors: {no_errors}")
+
+    output_csv.sort()
+    with open(JOBS_CSV, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "HTML_URL"])
+        writer.writerows([row for row in output_csv])
+
+    for repo_id in output_csv:
+        print(repo_id)
+
+    logger.info(f"Results data written to {JOBS_CSV}.")
 
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Handle automarking workflows")
     parser.add_argument(
         "ACTION",
-        choices=["start", "delete", "status"],
+        choices=["start", "delete", "jobs", "status"],
         help="Action to do on workflows.",
     )
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
@@ -274,10 +387,19 @@ if __name__ == "__main__":
             f"Will run workflow on last commit before date: {until_dt.isoformat()} - UTC: {until_dt.astimezone(UTC).isoformat()}"
         )
 
-    start_workflow(
-        repos=list_repos,
-        wrk_name=args.name,
-        commit=args.commit,
-        until_dt=until_dt,
-        run_name=args.run_name,
-    )
+    if args.ACTION == "start":
+        start_workflow(
+            repos=list_repos,
+            wrk_name=args.name,
+            commit=args.commit,
+            until_dt=until_dt,
+            run_name=args.run_name,
+        )
+    elif args.ACTION == "delete":
+        pass    
+    elif args.ACTION == "jobs":
+        get_jobs(
+            repos=list_repos,
+            wrk_name=args.name,
+            run_name=args.run_name,
+        )
