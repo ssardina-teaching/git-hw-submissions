@@ -32,7 +32,7 @@ from zoneinfo import ZoneInfo  # Python 3.9+
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 UTC = ZoneInfo("UTC")
 NOW = datetime.now(TIMEZONE)
-NOW_TXT = NOW.strftime("%Y-%m-%d %H:%M:%S")
+NOW_TXT = NOW.strftime("%Y-%m-%d_%H-%M")
 NOW = NOW.isoformat()
 # NOW_TXT = datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -351,6 +351,9 @@ if __name__ == "__main__":
         logger.error("You must provide a name for the workflow to run.")
         exit(1)
 
+    ###############################################
+    # Filter repos as desired
+    ###############################################
     # Get the list of TEAM + GIT REPO links from csv file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
     if args.repos is None:
