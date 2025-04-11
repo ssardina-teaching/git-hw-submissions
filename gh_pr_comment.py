@@ -28,26 +28,23 @@ import sys
 import time
 
 import util
-import logging
-import coloredlogs
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
 TIMEZONE_STR = "Australia/Melbourne"
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
+DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 
-
+import logging
+import coloredlogs
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-
-logger = logging.getLogger(__name__)
-
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+logger = logging.getLogger(__name__)
 coloredlogs.install(
     logger=logger, level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE
 )
 
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
@@ -99,12 +96,9 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Merge PRs in multiple repos")
     parser.add_argument("REPO_CSV", help="List of repositories to post comments to.")
     parser.add_argument("MARKING_CSV", help="List of student results.")
-    parser.add_argument("REPORT_FOLDER", help="Folder containing student report files.")
+    parser.add_argument("CONFIG", help="Python report builder file.")
     parser.add_argument(
-        "CONFIG", help="Python file with the specific config for for assessment."
-    )
-    parser.add_argument(
-        "--repos", nargs="+", help="if given, only the teams specified will be parsed."
+        "REPORT_FOLDER", nargs="?", help="Folder containing student report files."
     )
     parser.add_argument(
         "-t",
@@ -112,10 +106,13 @@ if __name__ == "__main__":
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument(
-        "--extension",
-        "-ext",
-        default="txt",
-        help="Extension of report file (Default: %(default)s).",
+        "--repos", nargs="+", help="if given, only the teams specified will be parsed."
+    )
+    parser.add_argument(
+        "--ghu", 
+        type=str,
+        default="GHU", 
+        help="if given, only the teams specified will be parsed (Default: %(default)s)."
     )
     parser.add_argument(
         "--start",
@@ -124,6 +121,12 @@ if __name__ == "__main__":
         help="repo no to start processing from (starts in 1).",
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
+    parser.add_argument(
+        "--extension",
+        "-ext",
+        default="txt",
+        help="Extension of report file (Default: %(default)s).",
+    )
     parser.add_argument(
         "--no-report",
         action="store_true",
@@ -137,37 +140,44 @@ if __name__ == "__main__":
         help="Do not push to repos, just report on console %(default)s.",
     )
     args = parser.parse_args()
+    print(args)
 
     now = datetime.now(TIMEZONE).isoformat()
     logger.info(f"Starting on {TIMEZONE}: {now}\n")
 
-    # Now load the report feedback module for the specific assessment being used
-    # Load the module from the given path
+    if args.REPORT_FOLDER is None:
+        args.no_report = True
+
+    ###############################################
+    # Load feedback report builder module and marking spreadsheet
     # https://medium.com/@Doug-Creates/dynamically-import-a-module-by-full-path-in-python-bbdf4815153e
+    ###############################################
     spec = importlib.util.spec_from_file_location("module_name", args.CONFIG)
     module_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module_feedback)
     # Add the module to sys.modules
     sys.modules["module_name"] = module_feedback
 
+    # these MUST be defined in the report builder
     FEEDBACK_MESSAGE = getattr(module_feedback, "FEEDBACK_MESSAGE")
     report_feedback = getattr(module_feedback, "report_feedback")
     check_submission = getattr(module_feedback, "check_submission")
 
-    # Get the list of relevant repos from the CSV file
+    # load the marking dictionary from the CSV file
+    marking_dict = load_marking_dict(args.MARKING_CSV, col_key=args.ghu)
+
+    ###############################################
+    # Filter repos as desired
+    ###############################################
+    # Get the list of TEAM + GIT REPO links from csv file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
-    start_no = 0
-    end_no = len(list_repos)
     if args.repos is None:
-        start_no = args.start - 1
-        end_no = (args.end if args.end is not None else len(list_repos))
-        list_repos = list_repos[start_no : end_no]
+        end_no = args.end if args.end is not None else len(list_repos)
+        list_repos = list_repos[args.start - 1 : end_no]
 
     if len(list_repos) == 0:
         logger.error(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
-
-    marking_dict = load_marking_dict(args.MARKING_CSV)
 
     ###############################################
     # Authenticate to GitHub
@@ -189,17 +199,18 @@ if __name__ == "__main__":
     authors_stats = []
     no_repos = len(list_repos)
     errors = []
-    for k, r in enumerate(list_repos, start=start_no+1):
+    for k, r in enumerate(list_repos, start=1):
         if k % SLEEP_RATE == 0 and k > 0:
             logger.info(f"Sleep for {SLEEP_TIME} seconds...")
             time.sleep(SLEEP_TIME)
 
+        repo_no = r["NO"]
         repo_id = r["REPO_ID"].lower()
         repo_name = r["REPO_NAME"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
         logger.info(
-            f"Processing repo {k}/{end_no}: {repo_id} - {repo_url}/pull/1"
+            f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
         if repo_id not in marking_dict:
             logger.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
@@ -289,7 +300,10 @@ if __name__ == "__main__":
             # create a new comment with the final marking/feedback table results
             feedback_text = report_feedback(marking_repo)
             message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
+            message = feedback_text
             issue_feedback_comment(pr_feedback, message, args.dry_run)
+            if not args.dry_run:
+                logger.info(f"\t Feedback comment posted to {pr_feedback.html_url}.")
         except GithubException as e:
             logger.error(f"\t Error in repo {repo_name}: {e}")
             errors.append([repo_id, repo_url, e])
