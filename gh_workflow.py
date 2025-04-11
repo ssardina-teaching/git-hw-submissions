@@ -66,6 +66,74 @@ def backup_file(file_path: str):
         time_now = util.get_time_now()
         os.rename(file_path, f"{file_path}-{time_now}.bak")
 
+def delete_workflow(
+    repos: list,
+    wrk_name: str,
+    until_dt: datetime,
+    run_name: str = None,
+    dry_run: bool = False,
+):
+    """Delete latest workflow runs for repos until some date in the past (excluded)
+
+    API for Workflows: https://pygithub.readthedocs.io/en/latest/github_objects/Workflow.html
+
+    Args:
+        repos (list): list of repos to process
+        wrk_name (str): name of the workflow to run
+        until_dt (datetime): all workflows after this date
+        run_name (str, optional): name of the run.
+    """
+    no_repos = len(repos)
+    output_csv = []
+    no_errors = 0
+    no_deleted = 0
+    for k, r in enumerate(repos, start=1):
+        if k % SLEEP_RATE == 0 and k > 0:
+            logger.info(f"Sleep for {SLEEP_TIME} seconds...")
+            time.sleep(SLEEP_TIME)
+
+        # get the current repo data
+        repo_no = r["NO"]
+        repo_id = r["REPO_ID"]
+        repo_name = r["REPO_NAME"]
+        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        logger.info(
+            f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
+        )
+        repo = g.get_repo(repo_name)
+
+        # first we get the workflow we are after
+        wrkflow: Workflow = None
+        for w in repo.get_workflows():
+            if wrk_name in w.name:
+                wrkflow = w
+                logger.info(f"\t Found workflow ({w})")
+                break
+        if wrkflow is None:
+            logger.info(f"\t Workflow *{wrk_name}* not in {repo_name}.")
+            no_errors += 1
+            continue
+
+        # we go over all worfklow RUNS of the workflow and delete if after until_dt
+        for wr in wrkflow.get_runs():
+            if run_name is not None and run_name not in wr.name:
+                continue
+            if wr.created_at > until_dt.astimezone(UTC):
+                logger.info(
+                    f"\t Workflow #{wr.run_number} run {wr.name} - {wr.created_at.astimezone(TIMEZONE)} - {wr.html_url} - deleting it..."
+                )
+                if not dry_run:
+                    no_deleted += 1
+                    try:
+                        wr.delete()
+                    except GithubException as e:
+                        logger.error(f"\t Error deleting workflow run: {e}")
+                        no_errors += 1
+            else:
+                # we have processed all workflow runs after until_dt
+                break
+    logger.info(f"Finished! No of repos processed: {no_repos} - Errors: {no_errors}")
+
 
 def start_workflow(
     repos: list,
@@ -73,6 +141,7 @@ def start_workflow(
     commit: str,
     until_dt: datetime = None,
     run_name: str = None,
+    dry_run: bool = False,
 ):
     """Dispatch a workflow to repos in list_repos
 
@@ -83,8 +152,6 @@ def start_workflow(
         wrk_name (str): name of the workflow to run
         commit (str): commit or branch to run the workflow on
         until_dt (datetime): last commit before this date
-        start_no (int): starting repo number to process
-        end_no (int): ending repo number to process
         run_name (str, optional): name of the run.
     """
     no_repos = len(repos)
@@ -168,7 +235,9 @@ def start_workflow(
                     inputs["run_name"] = run_name
 
                 # RUN the workflow on head of main; but the inputs have the sha that needs to be marked ;-) cool eh?
-                result = workflow_selected.create_dispatch(ref="main", inputs=inputs)
+                result = True
+                if not dry_run:
+                    result = workflow_selected.create_dispatch(ref="main", inputs=inputs)
                 if not result:
                     logger.error(
                         f"\t Workflow *{workflow_selected.name}* failed to start."
@@ -186,11 +255,12 @@ def start_workflow(
 
     logger.info(f"Finished! No of repos processed: {no_repos} - Errors: {no_errors}")
 
-    output_csv.sort()
-    with open(START_CSV, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
-        writer.writerows([row for row in output_csv])
+    if not dry_run:
+        output_csv.sort()
+        with open(START_CSV, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
+            writer.writerows([row for row in output_csv])
 
     for repo_id in output_csv:
         print(repo_id)
@@ -344,6 +414,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Remark even if commit was already marked (Default: %(deafault)s).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Do not push to repos, just report on console %(default)s.",
+    )
     args = parser.parse_args()
     logger.info(f"Starting script on {TIMEZONE}: {NOW} - {NOW_TXT}")
 
@@ -397,9 +473,16 @@ if __name__ == "__main__":
             commit=args.commit,
             until_dt=until_dt,
             run_name=args.run_name,
+            dry_run=args.dry_run
         )
     elif args.ACTION == "delete":
-        pass    
+        delete_workflow(
+            repos=list_repos,
+            wrk_name=args.name,
+            until_dt=until_dt,
+            run_name=args.run_name,
+            dry_run=args.dry_run
+        )
     elif args.ACTION == "jobs":
         get_jobs(
             repos=list_repos,
