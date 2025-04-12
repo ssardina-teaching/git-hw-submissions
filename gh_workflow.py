@@ -18,7 +18,6 @@ Example:
         --name Autograding --until 2025-04-08T12:00 --run-name "Automarking up April 8 12pm" -- \
             start repos.csv |& tee -a autograde-2025-04-08T1200.log
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024-2025"
 import csv
