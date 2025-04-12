@@ -19,8 +19,6 @@ NOW_ISO = NOW.isoformat()
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 
-CSV_REPO_GIT = "REPO_URL"
-CSV_REPO_ID_SUFFIX = "REPO_ID_SUFFIX"
 GH_HTTP_URL_PREFIX = "https://github.com"
 GH_GIT_URL_PREFIX = "git@github.com:"
 REPOS_HEADER_CSV = [
@@ -59,7 +57,7 @@ def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
         repos = [
             t
             for t in repos
-            if t[CSV_REPO_ID_SUFFIX].lower() in list(map(str.lower, repos_ids))
+            if t["REPO_ID_SUFFIX"].lower() in list(map(str.lower, repos_ids))
         ]
     return repos
 
