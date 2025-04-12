@@ -90,30 +90,6 @@ TIMESTAMP_HEADER_CSV = [
     ]
 
 
-# return timestamps form a csv submission file
-def load_timestamps(timestamp_filename):
-    """
-    Builds a dictionary from a CSV file of timestamps for each team
-
-    :param timestamp_filename: a CSV file containing three columns: team, submitted_at, commit
-    :return: a dictionary with key the team name, and value the timestamp of submission as per CSV file
-    """
-    team_timestamps = {}
-
-    with open(timestamp_filename, "r") as f:
-        reader = csv.DictReader(
-            f,
-            delimiter=",",
-            quotechar='"',
-            fieldnames=["team", "submitted_at", "commit"],
-        )
-
-        next(reader)  # skip header
-        for row in reader:
-            team_timestamps[row["team"]] = row["submitted_at"]
-    return team_timestamps
-
-
 def clone_team_repos(repos:list, tag:str, output_folder:str):
     """
     Clones a the repositories from a list of repos at the tag commit into a given folder
@@ -286,7 +262,7 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
         repos_cloned.append(
             {
-                "team": repo_name,
+                "repo": repo_name,
                 "submitted_at": new_commit_time.strftime(util.DATE_FORMAT),
                 "commit": new_commit,
                 "tag": tag,
