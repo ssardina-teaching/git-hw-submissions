@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 """
-A script to manage assignment submissions via git repositories.
+A script to clone collection of repositories in a CSV file, usually submissions to assignments/projects.
 
-Script takes a CSV file containing repo URL GIT  for each team and a tag and will clone/update them in an
-output directory.
+Script takes:
+    1) a CSV file with a collection of repositories;
+    2) a tag to clone at (defaults to `main`)
+    3) an output folder
 
-It also produces a file submission_timestamp.csv with all timestamp of the tag for the successful repo cloned/updated.
+and clones/updates the repo in an output directory. It also produces a file CSV file with the timestamps of the tag for the successful repo cloned/updated.
 
-This script uses GitPython module to have Git API:
+This script uses GitPython module gitpython to have Git API:
     https://gitpython.readthedocs.io/en/stable/tutorial.html
 
-A lot of tips on using GitPython:
-    http://www.legendu.net/misc/blog/hands-on-GitPython/
+    $ python -m pip install gitpython
 
 GitPython provides object model access to your git repository.
-
-    python3 -m pip install gitpython pytz
-
-One could also use pygit2 (https://www.pygit2.org/), which are bindings to the libgit2 shared library
-
+A lot of tips on using GitPython: http://www.legendu.net/misc/blog/hands-on-GitPython/
 
 Manual debug via gitpython:
 
