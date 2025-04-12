@@ -11,6 +11,12 @@ Library uses REST API: https://docs.github.com/en/rest
 
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
+
+Example:
+
+    $ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt \
+        --name Autograding --until 2025-04-08T12:00 --run-name "Automarking up April 8 12pm" -- \
+            start repos.csv |& tee -a autograde-2025-04-08T1200.log
 """
 
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
@@ -23,35 +29,18 @@ import util
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException, Workflow
+from util import TIMEZONE, UTC, NOW, NOW_TXT, LOGGING_DATE, LOGGING_FMT, GH_URL_PREFIX
 
-# get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
-TIMEZONE_STR = "Australia/Melbourne"  # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 from datetime import datetime
-from zoneinfo import ZoneInfo  # Python 3.9+
-
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
-UTC = ZoneInfo("UTC")
-NOW = datetime.now(TIMEZONE)
-NOW_TXT = NOW.strftime("%Y-%m-%d_%H-%M")
-NOW = NOW.isoformat()
-# NOW_TXT = datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
-
 
 import logging
 import coloredlogs
-
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-# LOGGING_LEVEL = logger.DEBUG
+# LOGGING_LEVEL = logging.DEBUG
 # logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
-
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
-
-GH_URL_PREFIX = "https://github.com"
 
 START_CSV = f"workflows-start-{NOW_TXT}.csv"
 JOBS_CSV = f"workflows-jobs-{NOW_TXT}.csv"
@@ -387,6 +376,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t",
         "--token-file",
+        required=True,
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument("--name", help="title of workflow to start.")

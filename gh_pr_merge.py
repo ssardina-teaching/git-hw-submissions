@@ -12,37 +12,31 @@ Library uses REST API: https://docs.github.com/en/rest
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2019-2023"
 
 from argparse import ArgumentParser
-import util
 from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
 
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+    GH_URL_PREFIX,
+)
+from datetime import datetime
+
 import logging
 import coloredlogs
-
-from datetime import datetime
-from zoneinfo import ZoneInfo  # this should work Python 3.9+
-
-TIMEZONE_STR = "Australia/Melbourne"
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
-
-
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+# logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
-
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
-
-GH_URL_PREFIX = "https://github.com"
 
 
 if __name__ == "__main__":
@@ -58,6 +52,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t",
         "--token-file",
+        required=True,
         help="File containing GitHub authorization token/password.",
     )
     args = parser.parse_args()

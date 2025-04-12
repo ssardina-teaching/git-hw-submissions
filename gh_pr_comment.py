@@ -12,10 +12,8 @@ Example:
 
 $ python gh_pr_feedback_comment.py repos.csv marking.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback.log
 """
-
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2024"
-
+__copyright__ = "Copyright 2024-2025"
 import csv
 import os
 from argparse import ArgumentParser
@@ -27,27 +25,27 @@ import importlib.util
 import sys
 import time
 
-import util
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+)
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
 TIMEZONE_STR = "Australia/Melbourne"
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 
 import logging
 import coloredlogs
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 logger = logging.getLogger(__name__)
 coloredlogs.install(
     logger=logger, level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE
 )
-
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
-
-GH_URL_PREFIX = "https://github.com/"
 
 CSV_ERRORS = "pr_comment_errors.csv"
 
@@ -103,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t",
         "--token-file",
+        required=True,
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument(

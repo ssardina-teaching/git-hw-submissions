@@ -75,6 +75,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-t",
         "--token-file",
+        required=True,
         help="File containing GitHub authorization token/password.",
     )
     parser.add_argument(

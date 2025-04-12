@@ -1,15 +1,27 @@
 import csv
+import os
 from github import Github, Repository, Organization, GithubException, Auth
 
 import git
 
+GH_URL_PREFIX = "https://github.com"
 
-import datetime
-import pytz
+# get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo  # Python 3.9+
 
+TIMEZONE_STR = "Australia/Melbourne"  # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-DATE_FORMAT = "%d/%m/%Y %H:%M:%S"
-TIMEZONE = pytz.timezone("Australia/Melbourne")
+
+TIMEZONE = ZoneInfo(TIMEZONE_STR)
+UTC = ZoneInfo("UTC")
+NOW = datetime.now(TIMEZONE)
+NOW_TXT = NOW.strftime("%Y-%m-%d_%H-%M")
+NOW = NOW.isoformat()
+# NOW_TXT = datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
+
+LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
+LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 
 
 CSV_REPO_GIT = "REPO_URL"
@@ -96,4 +108,20 @@ def get_tag_info(repo: git.Repo, tag_str="head"):
 
 
 def get_time_now():
-    return datetime.datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
+    return datetime.now(tz=TIMEZONE).strftime("%Y-%m-%d-%H-%M-%S")
+
+def date_to_utc(date: datetime) -> datetime:
+    """
+    Convert a datetime object to UTC timezone.
+    :param date: the datetime object to convert
+    :return: the datetime object in UTC timezone
+    """
+    if date.tzinfo is None:
+        date = TIMEZONE.localize(date)
+    return date.astimezone(timezone.utc)
+
+
+def backup_file(file_path: str):
+    if os.path.exists(file_path):
+        time_now = get_time_now()
+        os.rename(file_path, f"{file_path}-{time_now}.bak")

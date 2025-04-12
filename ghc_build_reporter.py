@@ -14,7 +14,6 @@ https://github.com/classroom-resources/autograding-grading-reporter
 
 ❯ python ../../tools/git-hw-submissions.git/ghc_build_reporter.py workshop-4-ssardina.git/.github/workflows/classroom.yml
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2025"
 import csv
