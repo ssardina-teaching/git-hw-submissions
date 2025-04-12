@@ -26,6 +26,7 @@ from util import (
     UTC,
     NOW,
     NOW_TXT,
+    NOW_ISO,
     LOGGING_DATE,
     LOGGING_FMT,
     GH_URL_PREFIX,
@@ -57,8 +58,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    now = datetime.now(TIMEZONE).isoformat()
-    logging.info(f"Starting on {TIMEZONE}: {now}\n")
+    logging.info(f"Starting on {TIMEZONE}: {NOW_ISO}\n")
 
     if args.no is None and args.title is None:
         logging.error("You must provide a PR number or title to merge.")

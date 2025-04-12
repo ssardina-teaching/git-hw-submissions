@@ -15,10 +15,9 @@ DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 UTC = ZoneInfo("UTC")
-NOW = datetime.now(TIMEZONE)
+NOW = datetime.now(TIMEZONE).replace(microsecond=0)
 NOW_TXT = NOW.strftime("%Y-%m-%d_%H-%M")
-NOW = NOW.isoformat()
-# NOW_TXT = datetime.now(TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
+NOW_ISO = NOW.isoformat()   
 
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"

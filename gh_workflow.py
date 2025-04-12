@@ -29,7 +29,16 @@ import util
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException, Workflow
-from util import TIMEZONE, UTC, NOW, NOW_TXT, LOGGING_DATE, LOGGING_FMT, GH_URL_PREFIX
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_ISO,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+    GH_URL_PREFIX,
+)
 
 from datetime import datetime
 
@@ -47,13 +56,6 @@ JOBS_CSV = f"workflows-jobs-{NOW_TXT}.csv"
 
 SLEEP_RATE = 10  # number of repos to process before sleeping
 SLEEP_TIME = 5  # sleep time in seconds between API calls
-
-
-def backup_file(file_path: str):
-    if os.path.exists(file_path):
-        logger.info(f"Backing up {file_path}...")
-        time_now = util.get_time_now()
-        os.rename(file_path, f"{file_path}-{time_now}.bak")
 
 def delete_workflow(
     repos: list,
@@ -411,7 +413,7 @@ if __name__ == "__main__":
         help="Do not push to repos, just report on console %(default)s.",
     )
     args = parser.parse_args()
-    logger.info(f"Starting script on {TIMEZONE}: {NOW} - {NOW_TXT}")
+    logger.info(f"Starting script on {TIMEZONE}: {NOW_ISO}")
 
     if args.name is None:
         logger.error("You must provide a name for the workflow to run.")

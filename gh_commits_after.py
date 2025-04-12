@@ -30,6 +30,7 @@ from util import (
     UTC,
     NOW,
     NOW_TXT,
+    NOW_ISO,
     LOGGING_DATE,
     LOGGING_FMT,
     GH_URL_PREFIX,
@@ -71,13 +72,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--until",
         type=str,
-        help="Last commit before this date. Datetime in ISO format, e.g., 2025-04-09T15:30. Overrides --commit.",
+        help="Get commit before this date. Datetime in ISO format, e.g., 2025-04-09T15:30. Overrides --commit.",
     )
     parser.add_argument(
         "--since",
         required=True,
         type=str,
-        help="Last commit before this date. Datetime in ISO format, e.g., 2025-04-09T15:30. Overrides --commit.",
+        help="Get commits after this this date. Datetime in ISO format, e.g., 2025-04-09T15:30. Overrides --commit.",
     )
     parser.add_argument(
         "--ignore",
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
     args = parser.parse_args()
-    logger.info(f"Starting script on {TIMEZONE}: {NOW} - {NOW_TXT}")
+    logger.info(f"Starting script on {TIMEZONE}: {NOW_ISO}")
 
     ###############################################
     # Filter repos as desired
@@ -127,21 +128,18 @@ if __name__ == "__main__":
     ###############################################
     # Process each repo in list_repos
     ###############################################
-    until_dt = None
+    until_dt = NOW
     if args.until is not None:
         until_dt = datetime.fromisoformat(args.until)
         if until_dt.tzinfo is None:
             until_dt = until_dt.replace(tzinfo=TIMEZONE)
-        logger.info(
-            f"Will run workflow on last commit before date: {until_dt.isoformat()} - UTC: {until_dt.astimezone(UTC).isoformat()}"
-        )
     if args.since is not None:
         since_dt = datetime.fromisoformat(args.since)
         if since_dt.tzinfo is None:
             since_dt = since_dt.replace(tzinfo=TIMEZONE)
-        logger.info(
-            f"Will run workflow on last commit before date: {since_dt.isoformat()} - UTC: {since_dt.astimezone(UTC).isoformat()}"
-        )
+    logger.info(
+        f"Getting commits between from {since_dt.isoformat()} until {until_dt.isoformat()}"
+    )
 
     no_repos = len(repos)
     output_csv = []
@@ -167,13 +165,14 @@ if __name__ == "__main__":
         for c in commits:
             login = c.author.login
             found = False
-            if login == repo_id or not login in args.ignore:
+            if not login in args.ignore:
                 logger.info(
                     f"\t Found commit {c.sha} - '{c.commit.message}' - {login} - {c.commit.author.date.astimezone(TIMEZONE)}"
                 )
                 no_late += 1
         if no_late > 0:
             no_found += 1
+            # get the very last commit that was legal (before deadline)
             last_valid_commit = repo.get_commits(until=since_dt.astimezone(UTC))[0]
             last_valid_commit_time = last_valid_commit.commit.author.date.astimezone(TIMEZONE)
             last_valid_commit_sha = last_valid_commit.sha
