@@ -57,15 +57,11 @@ if __name__ == "__main__":
     print("Total marks: ", marks)
     
     output = rf"""
-    - name: Autograding Reporter
-      uses: classroom-resources/autograding-grading-reporter@v1
-      env: {envs_tests}
-        LIVE_RESULTS: "${{steps.live.outputs.result}}"
-        MESSI_RESULTS: "${{steps.messi.outputs.result}}"
-        MAP-SOUND_RESULTS: "${{steps.map-sound.outputs.result}}"
-        MAP-OPTIMAL_RESULTS: "${{steps.map-optimal.outputs.result}}"
-      with:
-        runners: {runners}
-    """
+- name: Autograding Reporter
+  uses: classroom-resources/autograding-grading-reporter@v1
+  env: {envs_tests}
+  with:
+    runners: {runners}
+"""
         
     print(output)
