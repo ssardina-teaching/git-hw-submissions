@@ -25,7 +25,9 @@ import importlib.util
 import sys
 import time
 
+import util
 from util import (
+    NOW_ISO,
     TIMEZONE,
     UTC,
     NOW,
@@ -41,6 +43,7 @@ TIMEZONE = ZoneInfo(TIMEZONE_STR)
 import logging
 import coloredlogs
 LOGGING_LEVEL = logging.INFO
+# LOGGING_LEVEL = logging.DEBUG
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 logger = logging.getLogger(__name__)
 coloredlogs.install(
@@ -141,12 +144,18 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     print(args)
-
-    now = datetime.now(TIMEZONE).isoformat()
-    logger.info(f"Starting on {TIMEZONE}: {now}\n")
+    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO}")
 
     if args.REPORT_FOLDER is None:
         args.no_report = True
+
+    if not os.path.isfile(args.REPO_CSV):
+        logger.error(f"Repo CSV file {args.REPO_CSV} not found.")
+        exit(1)
+
+    if not os.path.isfile(args.MARKING_CSV):
+        logger.error(f"Marking CSV file {args.MARKING_CSV} not found.")
+        exit(1)
 
     ###############################################
     # Load feedback report builder module and marking spreadsheet
@@ -212,10 +221,6 @@ if __name__ == "__main__":
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
-        if repo_id not in marking_dict:
-            logger.error(f"\t Repo {repo_name} not found in {args.MARKING_CSV}.")
-            errors.append([repo_id, repo_url, "Repo not found in marking CSV"])
-            continue
 
         repo = g.get_repo(repo_name)
         try:
@@ -235,9 +240,10 @@ if __name__ == "__main__":
                     logger.error("\t Feedback PR not found! Skipping...")
                     errors.append([repo_id, repo_url, "Feedback PR not found"])
                     continue
+            logger.debug(f"\t Feedback PR found: {pr_feedback}")
 
             # get the marking data for the student/repo
-            marking_repo = marking_dict[repo_id]
+            marking_repo = marking_dict[repo_name]
 
             # print(marking_repo["Q3T"])
             # print(type(marking_repo["Q3T"]))

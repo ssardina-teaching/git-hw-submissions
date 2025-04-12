@@ -52,6 +52,7 @@ coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 START_CSV = f"workflows-start-{NOW_TXT}.csv"
 JOBS_CSV = f"workflows-jobs-{NOW_TXT}.csv"
+JOBS_HEADER_CSV = ["REPO_ID_SUFFIX", "REPO_ID", "REPO_URL", "RESULT", "HTML_URL"]
 
 SLEEP_RATE = 10  # number of repos to process before sleeping
 SLEEP_TIME = 5  # sleep time in seconds between API calls
@@ -100,7 +101,7 @@ def delete_workflow(
                 logger.info(f"\t Found workflow ({w})")
                 break
         if wrkflow is None:
-            logger.info(f"\t Workflow *{wrk_name}* not in {repo_name}.")
+            logger.error(f"\t Workflow *{wrk_name}* not in {repo_name}.")
             no_errors += 1
             continue
 
@@ -252,8 +253,8 @@ def start_workflow(
             writer.writerow(["REPO_ID_SUFFIX", "REPO_ID", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
             writer.writerows([row for row in output_csv])
 
-    for repo_id in output_csv:
-        print(repo_id)
+    # for repo_id in output_csv:
+    #     print(repo_id)
 
     logger.info(f"Workflow results data written to {START_CSV}.")
 
@@ -353,14 +354,11 @@ def get_jobs(
 
     output_csv.sort()
     with open(JOBS_CSV, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID_SUFFIX", "REPO_ID", "REPO_URL", "RESULT", "HTML_URL"])
+        writer = csv.writer(file, quoting=csv.QUOTE_NONNUMERIC)
+        writer.writerow(JOBS_HEADER_CSV)
         writer.writerows([row for row in output_csv])
 
-    for repo_id in output_csv:
-        print(repo_id)
-
-    logger.info(f"Results data written to {JOBS_CSV}.")
+    logger.info(f"Results data written to CSV file: {JOBS_CSV}.")
 
 
 if __name__ == "__main__":
