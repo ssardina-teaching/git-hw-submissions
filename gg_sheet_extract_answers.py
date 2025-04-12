@@ -14,7 +14,7 @@ $ python gh_pr_feedback_comment.py repos.csv marking.csv reports  -t ~/.ssh/keys
 """
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2024"
+__copyright__ = "Copyright 2024-2025"
 
 import csv
 import os
@@ -28,32 +28,28 @@ import sys
 import time
 
 import util
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_TXT,
+    NOW_ISO,
+    LOGGING_DATE,
+    LOGGING_FMT,
+    GH_HTTP_URL_PREFIX,
+)
+
 import logging
 import coloredlogs
-
-# get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
-TIMEZONE_STR = "Australia/Melbourne"
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
-
-
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-
 logger = logging.getLogger(__name__)
-
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 coloredlogs.install(
     logger=logger, level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE
 )
 
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
-
-GH_URL_PREFIX = "https://github.com/"
-
+CSV_HEADER = ["REPO_ID_SUFFIX", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 CSV_ERRORS = "pr_comment_errors.csv"
-
 SLEEP_TIME = 5  # sleep time in seconds between API calls
 
 
@@ -196,7 +192,7 @@ if __name__ == "__main__":
             logger.info(f"Sleep for {SLEEP_TIME} seconds...")
             time.sleep(SLEEP_TIME)
 
-        repo_id = r["REPO_ID"].lower()
+        repo_id = r["REPO_ID_SUFFIX"].lower()
         repo_name = r["REPO_NAME"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
@@ -303,7 +299,7 @@ if __name__ == "__main__":
 
     with open(CSV_ERRORS, "a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_URL", "ERROR"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ERROR"])
         writer.writerows(errors)
 
     logger.info(f"Repos with errors written to {CSV_ERRORS}.")

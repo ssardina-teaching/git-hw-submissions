@@ -44,7 +44,7 @@ logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DAT
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
+CSV_HEADER = ["REPO_ID_SUFFIX", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com"
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     merged_pr = []
     forced_pr = []  # repos that have forced push
     for k, r in enumerate(list_repos, start=1):
-        row = r["REPO_ID"]
+        row = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {row} ({repo_url})...")
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     merged_pr.sort()
     with open(CSV_MERGED, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "PR_URL"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "PR_URL"])
         writer.writerows([row for row in merged_pr])
 
     logging.info(f"Repos that have forced push: \n\t {forced_pr}.")
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     forced_pr.sort()
     with open(CSV_FORCED_PUSH, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "PR_URL"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "PR_URL"])
         writer.writerows([row for row in merged_pr])
 
     for row in forced_pr:

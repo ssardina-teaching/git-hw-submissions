@@ -171,7 +171,7 @@ $ python ./gh_pr_feedback_comment.py repos.csv marking.csv reports config_report
 Use `--repos ssardina juan` to restrict to the three repos, and `--ghu` to define the column name containing the repo owner, and `--dry-run` to send feedback to console instead of repos:
 
 ```shell
-$ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID --dry-run
+$ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID_SUFFIX --dry-run
 ```
 
 ### `gh_workflow.py`: run automarking workflow
@@ -212,9 +212,16 @@ This was used to revert back to a previous commit before a deadline when the stu
 
 These tools use [GitPython](https://gitpython.readthedocs.io/en/stable/tutorial.html) module to have Git API in Python.
 
-- `git_clone_submissions.py`: will clone and update a set of repositories (provided in a CSV file) for a given submission tag.
-- `git_create_wiki.py`: will push a template Wiki to a list of GitHub repos.
-- `git_batch_commit.sh`: a shell script template to make changes to a collection of repos.
+We can run interactively first at development time; for example:
+
+```shell
+>>> import util
+>>> g = util.open_gitHub(token_file="/home/ssardina/.ssh/keys/gh-token-ssardina.txt")
+>>> repo = g.get_repo("RMIT-COSC2780-2973-IDM25/workshop-5-ssardina")
+>>> ws = repo.get_workflows()
+>>> ws[0].create_dispatch(ref="main")
+```
+
 
 ### `git_clone_submissions.py`: batch git cloning
 

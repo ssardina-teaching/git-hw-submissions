@@ -53,6 +53,7 @@ import traceback
 # local utilities
 import util
 from util import (
+    GH_GIT_URL_PREFIX,
     TIMEZONE,
     UTC,
     NOW,
@@ -60,7 +61,7 @@ from util import (
     NOW_TXT,
     LOGGING_DATE,
     LOGGING_FMT,
-    GH_URL_PREFIX,
+    GH_HTTP_URL_PREFIX,
 )
 
 
@@ -79,8 +80,17 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 
-CSV_REPO_GIT = "REPO_URL"
-CSV_REPO_ID = "REPO_ID"
+"REPO_URL" = "REPO_URL"
+"REPO_ID_SUFFIX" = "REPO_ID_SUFFIX" 
+TIMESTAMP_HEADER_CSV = [
+        "repo",
+        "submitted_at",
+        "commit",
+        "tag",
+        "tagged_at",
+        "no_commits",
+        "status",
+    ]
 
 
 # return timestamps form a csv submission file
@@ -109,66 +119,64 @@ def load_timestamps(timestamp_filename):
 
 def clone_team_repos(repos:list, tag:str, output_folder:str):
     """
-    Clones a the repositories from a list of teams at the tag commit into a given folder
+    Clones a the repositories from a list of repos at the tag commit into a given folder
 
     :param list_repos: a dictionary mapping team names to git-urls
     :param tag_str: the tag to grab
     :return: the following information as a tuple:
-         teams_cloned : teams that were successfully cloned
-         team_new: teams that are new
-         team_updated: teams that were there and got a new version in the tag
-         team_unchanged: teams that were there but with the same tag version
-         team_missing: teams that where not cloned
+         repos_cloned : teams that were successfully cloned
+         repos_new: teams that are new
+         repos_updated: teams that were there and got a new version in the tag
+         repos_unchanged: teams that were there but with the same tag version
+         repos_missing: teams that where not cloned
     """
     no_repos = len(repos)
-    repos.sort(key=lambda tup: tup[CSV_REPO_ID].lower())  # sort the list of teams
+    repos.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())  # sort the list of teams
 
     logger.info(f"About to clone {no_repos} repo teams into folder {output_folder}/.")
-    teams_new = []
-    teams_missing = []
-    teams_unchanged = []
-    teams_updated = []
-    teams_cloned = []
-    teams_notag = []
-    teams_noteam = []
-    for c, row in enumerate(repos, start=1):
-        http_repo_link = row[CSV_REPO_GIT].replace(
-            "git@github.com:", "http://github.com/"
-        )
+    repos_new = []
+    repos_missing = []
+    repos_unchanged = []
+    repos_updated = []
+    repos_cloned = []
+    repos_notag = []
+    repos_noteam = []
+    for k, row in enumerate(repos, start=1):
+        http_repo_link = row["REPO_URL"].replace(GH_GIT_URL_PREFIX, GH_HTTP_URL_PREFIX)
         logger.info(
-            f"Processing {c}/{no_repos} team **{row[CSV_REPO_ID]}** in git url {http_repo_link}."
+            f"Processing {k}/{no_repos} team **{row["REPO_ID_SUFFIX"]}** in git url {http_repo_link}."
         )
 
-        team_name = row[CSV_REPO_ID]
-        if not team_name:
+        repo_name = row["REPO_ID_SUFFIX"]
+        if not repo_name:
             logger.info(
-                f"Repository {row[CSV_REPO_ID]} does not have a team associated; skipping..."
+                f"\t Repository {row["REPO_ID_SUFFIX"]} does not have a team associated; skipping..."
             )
-            teams_noteam.append(row["USERNAME"])
+            repos_noteam.append(row["USERNAME"])
             continue
 
-        git_url = row[CSV_REPO_GIT]
-        git_local_dir = os.path.join(output_folder, team_name)
+        git_url = row["REPO_URL"]
+        git_local_dir = os.path.join(output_folder, repo_name)
 
         time.sleep(2)
         if not os.path.exists(
             git_local_dir
         ):  # if there is NOT already a local repo for the team - clone from scratch!
-            logger.info(f"Trying to clone NEW team repo from URL {git_url}.")
+            logger.info(f"\t Trying to clone NEW team repo from URL {git_url}.")
             try:
                 repo = git.Repo.clone_from(git_url, git_local_dir, branch=tag)
                 new_commit_time, new_commit, new_tagged_time = util.get_tag_info(
                     repo, tag_str="head"
                 )
                 logger.info(
-                    f"Team {team_name} cloned successfully with tag date {new_commit_time}."
+                    f"\t Team {repo_name} cloned successfully with tag date {new_commit_time}."
                 )
-                teams_new.append(team_name)
+                repos_new.append(repo_name)
                 status = "new"
             except git.GitCommandError as e:
-                teams_missing.append(team_name)
+                repos_missing.append(repo_name)
                 logger.warning(
-                    f"Repo for team {team_name} with tag/branch {tag} cannot be cloned: {e.stderr}"
+                    f"Repo for team {repo_name} with tag/branch {tag} cannot be cloned: {e.stderr}"
                 )
                 continue
             except KeyboardInterrupt:
@@ -178,15 +186,15 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
                 sys.exit("keyboard interrupted!")
             except TypeError as e:
                 logger.warning(
-                    f"Repo for team {team_name} was cloned but has no tag {tag}, removing it...: {e}"
+                    f"Repo for team {repo_name} was cloned but has no tag {tag}, removing it...: {e}"
                 )
                 repo.close()
                 shutil.rmtree(git_local_dir)
-                teams_notag.append(team_name)
+                repos_notag.append(repo_name)
                 continue
             except Exception as e:
                 logger.error(
-                    f"Repo for team {team_name} cloned but unknown error when getting tag {tag}; should not happen. Stopping... {e}"
+                    f"Repo for team {repo_name} cloned but unknown error when getting tag {tag}; should not happen. Stopping... {e}"
                 )
                 repo.close()
                 exit(1)
@@ -201,7 +209,7 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
                 local_commit_time, _, _ = util.get_tag_info(repo, tag_str="head")
 
                 logger.info(
-                    f"Existing LOCAL submission for {team_name} dated {local_commit_time} ({str(repo.commit())[:7]}); updating it..."
+                    f"\t Existing LOCAL submission for {repo_name} dated {local_commit_time} ({str(repo.commit())[:7]}); updating it..."
                 )
 
                 # Next, first fetch from remote all tags and new commits
@@ -222,9 +230,9 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
                     if (
                         new_commit_time is None
                     ):  # tag has been deleted! remove local repo, no more submission
-                        teams_missing.append(team_name)
+                        repos_missing.append(repo_name)
                         logger.info(
-                            f"No tag {tag} in the repository for team {team_name} anymore; removing it..."
+                            f"No tag {tag} in the repository for team {repo_name} anymore; removing it..."
                         )
                         repo.close()
                         shutil.rmtree(git_local_dir)
@@ -238,19 +246,19 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
 
                 # Now process timestamp to report new or unchanged repo
                 if new_commit_time == local_commit_time:
-                    logger.info(f"Team {team_name} submission has not changed.")
-                    teams_unchanged.append(team_name)
+                    logger.info(f"Team {repo_name} submission has not changed.")
+                    repos_unchanged.append(repo_name)
                     status = "unchanged"
                 else:
                     logger.info(
-                        f"Team {team_name} updated successfully with new tag date {new_commit_time}"
+                        f"Team {repo_name} updated successfully with new tag date {new_commit_time}"
                     )
-                    teams_updated.append(team_name)
+                    repos_updated.append(repo_name)
                     status = "updated"
             except git.GitCommandError as e:
-                teams_missing.append(team_name)
+                repos_missing.append(repo_name)
                 logger.warning(
-                    f"Problem with existing repo for team {team_name}; removing it: {e} - {e.stderr}"
+                    f"Problem with existing repo for team {repo_name}; removing it: {e} - {e.stderr}"
                 )
                 print("\n")
                 repo.close()
@@ -265,7 +273,7 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
                 print(traceback.print_exc())
                 exit(1)
 
-                teams_missing.append(team_name)
+                repos_missing.append(repo_name)
                 logger.warning(
                     f"\t Local repo {git_local_dir} is problematic; removing it..."
                 )
@@ -286,9 +294,9 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
             )  # get the no of commits tracing to the tag
         repo.close()
         # Finally, write teams that have repos (new/updated/unchanged) into submission timestamp file
-        teams_cloned.append(
+        repos_cloned.append(
             {
-                "team": team_name,
+                "team": repo_name,
                 "submitted_at": new_commit_time.strftime(util.DATE_FORMAT),
                 "commit": new_commit,
                 "tag": tag,
@@ -300,13 +308,13 @@ def clone_team_repos(repos:list, tag:str, output_folder:str):
 
     # the end....
     return (
-        teams_cloned,
-        teams_new,
-        teams_updated,
-        teams_unchanged,
-        teams_missing,
-        teams_notag,
-        teams_noteam,
+        repos_cloned,
+        repos_new,
+        repos_updated,
+        repos_unchanged,
+        repos_missing,
+        repos_notag,
+        repos_noteam,
     )
 
 
@@ -330,7 +338,7 @@ if __name__ == "__main__":
     parser.add_argument(
         dest="REPOS_CSV",
         type=str,
-        help="CSV file containing the URL git repo for each team (must contain two named columns: REPO_ID and REPO_URL).",
+        help="CSV file containing the URL git repo for each team (must contain two named columns: REPO_ID_SUFFIX and REPO_URL).",
     )
     parser.add_argument(
         dest="TAG",
@@ -384,26 +392,17 @@ if __name__ == "__main__":
 
     # Perform the ACTUAL CLONING of all teams in list_teams
     (
-        teams_cloned,
-        teams_new,
-        teams_updated,
-        teams_unchanged,
-        teams_missing,
-        teams_notag,
-        teams_noteam,
+        repos_cloned,
+        repos_new,
+        repos_updated,
+        repos_unchanged,
+        repos_missing,
+        repos_notag,
+        repos_noteam,
     ) = clone_team_repos(repos, args.TAG, args.OUTPUT_FOLDER)
 
     # Write the submission timestamp file
     logger.warning("Producing timestamp csv file...")
-    TIMESTAMP_HEADER = [
-        "team",
-        "submitted_at",
-        "commit",
-        "tag",
-        "tagged_at",
-        "no_commits",
-        "status",
-    ]
 
     # Make a backup of an existing cvs timestamp file, if there is one
     timestamp_bak = None
@@ -411,34 +410,34 @@ if __name__ == "__main__":
         logger.warning(
             f"Making a backup of existing timestamp file {args.file_timestamps}."
         )
+        util.backup_file(args.file_timestamps)
+
+        # read the existing data
         with open(args.file_timestamps, "r") as f:
             timestamp_bak = list(
                 csv.DictReader(f)
-            )  # read current timestamp file if exists
-            # timestamp_back = list(csv.DictReader(f, fieldnames=TIMESTAMP_HEADER))
-
-        time_now = util.get_time_now()
-        shutil.copy(args.file_timestamps, f"{args.file_timestamps}-{time_now}.bak")
+            )  
 
     with open(args.file_timestamps, "w") as csv_file:
-        submission_writer = csv.DictWriter(csv_file, fieldnames=TIMESTAMP_HEADER)
+        # write header
+        submission_writer = csv.DictWriter(csv_file, fieldnames=TIMESTAMP_HEADER_CSV)
         submission_writer.writeheader()
 
-        # migrate all the other rows from the previous timestamp file, if needed
+        # if some repos were selected, migrate all the other ones as they were
         if args.repos and timestamp_bak is not None:
             for row in timestamp_bak:
-                if row["team"] not in args.repos:
+                if row["repo"] not in args.repos:
                     submission_writer.writerow(row)
 
-        # now dump all the teams that have been cloned into the csv timestamp file
-        submission_writer.writerows(teams_cloned)
+        # dump all the teams that have been cloned into the CSV timestamp file
+        submission_writer.writerows(repos_cloned)
 
     # produce report of what was cloned
     print("\n ============================================== \n")
-    report_teams("NEW TEAMS", teams_new)
-    report_teams("UPDATED TEAMS", teams_updated)
-    report_teams("UNCHANGED TEAMS", teams_unchanged)
-    report_teams("TEAMS MISSING (or not cloned successfully)", teams_missing)
-    report_teams("TEAMS WITH NO TAG", teams_notag)
-    report_teams("REPOS WITH NO TEAM", teams_noteam)
+    report_teams("NEW TEAMS", repos_new)
+    report_teams("UPDATED TEAMS", repos_updated)
+    report_teams("UNCHANGED TEAMS", repos_unchanged)
+    report_teams("TEAMS MISSING (or not cloned successfully)", repos_missing)
+    report_teams("TEAMS WITH NO TAG", repos_notag)
+    report_teams("REPOS WITH NO TEAM", repos_noteam)
     print("\n ============================================== \n")

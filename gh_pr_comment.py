@@ -205,7 +205,7 @@ if __name__ == "__main__":
             time.sleep(SLEEP_TIME)
 
         repo_no = r["NO"]
-        repo_id = r["REPO_ID"].lower()
+        repo_id = r["REPO_ID_SUFFIX"].lower()
         repo_name = r["REPO_NAME"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
     with open(CSV_ERRORS, "a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_URL", "ERROR"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ERROR"])
         writer.writerows(errors)
 
     logger.info(f"Repos with errors written to {CSV_ERRORS}.")

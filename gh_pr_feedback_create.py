@@ -127,7 +127,7 @@ if __name__ == "__main__":
     missing_pr = []
     errors = []
     for k, r in enumerate(list_repos):
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"https://github.com/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
@@ -227,13 +227,13 @@ if __name__ == "__main__":
         # Write error CSV file
         with open(CSV_ISSUES, "w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
+            writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"])
             writer.writerows(errors)
         logging.info(f"Errors written to {CSV_ISSUES}.")
 
         # Write error CSV file
         with open(CSV_MISSING, "w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["REPO_ID", "REPO_URL", "ISSUE", "DETAILS"])
+            writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"])
             writer.writerows(errors)
         logging.info(f"Missing PR repos written to {CSV_MISSING}.")

@@ -84,7 +84,7 @@ def delete_workflow(
 
         # get the current repo data
         repo_no = r["NO"]
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
@@ -154,7 +154,7 @@ def start_workflow(
 
         # get the current repo data
         repo_no = r["NO"]
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
@@ -249,7 +249,7 @@ def start_workflow(
         output_csv.sort()
         with open(START_CSV, "w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
+            writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "REPO_URL", "RESULT", "COMMIT_SHA", "COMMIT_DATE"])
             writer.writerows([row for row in output_csv])
 
     for repo_id in output_csv:
@@ -289,7 +289,7 @@ def get_jobs(
 
         # get the current repo data
         repo_no = r["NO"]
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
@@ -354,7 +354,7 @@ def get_jobs(
     output_csv.sort()
     with open(JOBS_CSV, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID", "REPO_NAME", "REPO_URL", "RESULT", "HTML_URL"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "REPO_URL", "RESULT", "HTML_URL"])
         writer.writerows([row for row in output_csv])
 
     for repo_id in output_csv:

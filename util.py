@@ -1,20 +1,15 @@
+import base64
 import csv
 import os
+import shutil
 from github import Github, Repository, Organization, GithubException, Auth
-
 import git
-
-GH_HTTP_URL_PREFIX = "https://github.com"
-GH_GIT_URL_PREFIX = "git@github.com:"
-
 
 # get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo  # Python 3.9+
-
 TIMEZONE_STR = "Australia/Melbourne"  # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-
 TIMEZONE = ZoneInfo(TIMEZONE_STR)
 UTC = ZoneInfo("UTC")
 NOW = datetime.now(TIMEZONE).replace(microsecond=0)
@@ -24,9 +19,18 @@ NOW_ISO = NOW.isoformat()
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 
-
 CSV_REPO_GIT = "REPO_URL"
-CSV_REPO_ID = "REPO_ID"
+CSV_REPO_ID_SUFFIX = "REPO_ID_SUFFIX"
+GH_HTTP_URL_PREFIX = "https://github.com"
+GH_GIT_URL_PREFIX = "git@github.com:"
+REPOS_HEADER_CSV = [
+    "ORG_NAME",
+    "REPO_ID_PREFIX",
+    "REPO_ID_SUFFIX",
+    "REPO_NAME",
+    "REPO_URL",
+    "REPO_HTTP",
+]
 
 
 def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
@@ -37,7 +41,7 @@ def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
     :param csv_file: file where csv data is with two fields TEAM and GIT
     :param repos_ids: list of specific repo names or None
     :return: a list of dictionaries for each repo (name, url, etc)
-            e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'ASSIGNMENT': 'p0-warmup', 'REPO_ID': 'msardina', 'REPO_NAME': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
+            e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'REPO_ID_PREFIX': 'p0-warmup', 'REPO_ID_SUFFIX': 'msardina', 'REPO_NAME': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
     """
 
     # Get the list of ALL teams with their GIT URL from the CSV file
@@ -53,7 +57,7 @@ def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
         repos = [
             t
             for t in repos
-            if t[CSV_REPO_ID].lower() in list(map(str.lower, repos_ids))
+            if t[CSV_REPO_ID_SUFFIX].lower() in list(map(str.lower, repos_ids))
         ]
     return repos
 
@@ -82,7 +86,7 @@ def get_tag_info(repo: git.Repo, tag_str="head"):
     """
     if tag_str == "head":
         commit = repo.commit()
-        commit_time = datetime.datetime.fromtimestamp(
+        commit_time = datetime.fromtimestamp(
             commit.committed_date, tz=TIMEZONE
         )
         tagged_time = commit_time
@@ -93,11 +97,11 @@ def get_tag_info(repo: git.Repo, tag_str="head"):
             return None, None, None
         commit = tag.commit
 
-        commit_time = datetime.datetime.fromtimestamp(
+        commit_time = datetime.fromtimestamp(
             commit.committed_date, tz=TIMEZONE
         )
         try:
-            tagged_time = datetime.datetime.fromtimestamp(
+            tagged_time = datetime.fromtimestamp(
                 tag.object.tagged_date, tz=TIMEZONE
             )  # if it is an annotated tag
         except:
@@ -122,7 +126,40 @@ def date_to_utc(date: datetime) -> datetime:
     return date.astimezone(timezone.utc)
 
 
-def backup_file(file_path: str):
+def backup_file(file_path: str, rename=False):
     if os.path.exists(file_path):
-        time_now = get_time_now()
-        os.rename(file_path, f"{file_path}-{time_now}.bak")
+        if rename:
+            os.rename(file_path, f"{file_path}-{NOW_TXT}.bak")
+        else:
+            shutil.copy(file_path, f"{file_path}-{NOW_TXT}.bak")
+
+
+def print_repo_info(repo : Repository):
+    # repository full name
+    print("Full name:", repo.full_name)
+    # repository description
+    print("Description:", repo.description)
+    # the date of when the repo was created
+    print("Date created:", repo.created_at)
+    # the date of the last git push
+    print("Date of last push:", repo.pushed_at)
+    # home website (if available)
+    print("Home Page:", repo.homepage)
+    # programming language
+    print("Language:", repo.language)
+    # number of forks
+    print("Number of forks:", repo.forks)
+    # number of stars
+    print("Number of stars:", repo.stargazers_count)
+    print("-" * 50)
+    # repository content (files & directories)
+    print("Contents:")
+    for content in repo.get_contents(""):
+        print(content)
+    try:
+        # repo license
+        print(
+            "License:", base64.b64decode(repo.get_license().content.encode()).decode()
+        )
+    except:
+        pass

@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         # get the current repo data
         repo_no = r["NO"]
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
@@ -181,7 +181,7 @@ if __name__ == "__main__":
             logger.info(f"Last valid commit: {last_valid_commit_sha} - '{last_valid_commit_message}' - {last_valid_commit_time} - {last_valid_commit_url}")
             output_csv.append(
                 {
-                    "REPO_ID": repo_id,
+                    "REPO_ID_SUFFIX": repo_id,
                     "AUTHOR": login,
                     "URL": f"{repo.html_url}/commits/",
                     "NO_LATE": no_late,
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         writer = csv.DictWriter(
             csvfile,
             fieldnames=[
-                "REPO_ID",
+                "REPO_ID_SUFFIX",
                 "AUTHOR",
                 "URL",
                 "NO_LATE",

@@ -39,7 +39,7 @@ logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DAT
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-CSV_HEADER = ["REPO_ID", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
+CSV_HEADER = ["REPO_ID_SUFFIX", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 
 GH_URL_PREFIX = "https://github.com/"
 
@@ -198,7 +198,7 @@ def get_stats_contrib_repo_all(g: Github, repo_name):
 if __name__ == "__main__":
     parser = ArgumentParser(
         description="Extract no of commits per author in a collection of repositories given as a CSV file"
-        "CSV HEADERS: ORG_NAME, ASSIGNMENT, REPO_ID, REPO_NAME, REPO_GIT"
+        "CSV HEADERS: ORG_NAME, REPO_ID_PREFIX, REPO_ID_SUFFIX, REPO_NAME, REPO_GIT"
     )
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     # Process each repo in list_repos
     authors_stats = []
     for r in list_repos:
-        repo_id = r["REPO_ID"]
+        repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_NAME"]
         repo_url = f"https://github.com/{repo_name}"
         logging.info(f"Processing repo {repo_id} ({repo_url})...")
@@ -273,7 +273,7 @@ if __name__ == "__main__":
 
             next(csv_reader)  # skip header
             for row in csv_reader:
-                if args.repos is not None and row["REPO_ID"] not in args.repos:
+                if args.repos is not None and row["REPO_ID_SUFFIX"] not in args.repos:
                     rows_to_csv.append(row)
     else:
         logging.info(
@@ -284,7 +284,7 @@ if __name__ == "__main__":
     for x in authors_stats:  # x = (repo_name, dict_authors_commits)
         for author in x[1]:
             row = {}
-            row["REPO_ID"] = x[0]
+            row["REPO_ID_SUFFIX"] = x[0]
             row["AUTHOR"] = author
             row["COMMITS"] = x[1][author]
             row["ADDITIONS"] = x[2][author]
@@ -292,7 +292,7 @@ if __name__ == "__main__":
             rows_to_csv.append(row)
 
     # sort by repo id first, then author
-    rows_to_csv.sort(key=lambda x: (x["REPO_ID"], x["AUTHOR"]))
+    rows_to_csv.sort(key=lambda x: (x["REPO_ID_SUFFIX"], x["AUTHOR"]))
 
     # finally, write to csv the whole pack of rows (old and updated)
     with open(args.CSV_OUT, "w") as output_csv_file:
