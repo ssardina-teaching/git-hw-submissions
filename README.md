@@ -1,6 +1,14 @@
 # Teaching scripts
 
-This repo contains useful scripts I developed over the years to support student's submissions for homeworks and projects. They include tools to manage Git and  GitHub repositories, Google Workspaces (drive, spreadsheets), and shell/filesystem scripts.
+This repo contains useful scripts I developed over the years (since 2015!) to support student's submissions for homeworks and projects. They include tools to manage Git and  GitHub repositories, Google Workspaces (drive, spreadsheets), and shell/filesystem scripts.
+
+They are almost all Python-based script, using two API libraries:
+
+- [GitPython](https://gitpython.readthedocs.io/en/stable/index.html) (scripts `git_-_xxx.py`):  to perform GIT operations on the filesystem (e.g., cloning, commiting and pushing changes, reverting)
+- [PyGitHub](https://github.com/PyGithub/PyGithub) (scripts `gh_xxx.py`): to perform API calls to [GitHub REST API](https://docs.github.com/en/rest?apiVersion=2022-11-28).
+- Various libraries for accessing Google resorces (spreadsheets, Drive, etc.). These scripts are named `gg_xxx.py`
+
+Feel free to use them as desired. No guarantees and I am sure they will have bugs or out-dated code! Open an issue or PR as needed.  😉
 
 - [Teaching scripts](#teaching-scripts)
   - [Setup](#setup)
@@ -20,12 +28,13 @@ This repo contains useful scripts I developed over the years to support student'
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
-  - [`git_revert.py`: revert commits done late](#git_revertpy-revert-commits-done-late)
+    - [`git_revert.py`: revert commits done late](#git_revertpy-revert-commits-done-late)
   - [Google Scripts](#google-scripts)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
     - [`gg_sheet_submissions.py`: download submissions from Google Sheets](#gg_sheet_submissionspy-download-submissions-from-google-sheets)
     - [`gg_drive_download.py`: download files in Drive folder](#gg_drive_downloadpy-download-files-in-drive-folder)
-  - [Some useful commands](#some-useful-commands)
+  - [Useful shell commands](#useful-shell-commands)
+  - [Contributors](#contributors)
 
 ## Setup
 
@@ -300,7 +309,7 @@ The timezone used is defined by constant `TIMEZONE` in the script (defaults to `
 
 This script allows to commit and push changes to a collection of repos that already exist in a folder. This is useful to make edits to students' repos after they have been created.
 
-## `git_revert.py`: revert commits done late
+### `git_revert.py`: revert commits done late
 
 Sometime we want to revert back to some previous commit, for example, if the student has done late work which has already been autograder by the workflow.
 
@@ -315,7 +324,7 @@ $ python ../../tools/git-hw-submissions.git/git_revert.py submissions/deltaechov
 
 To access [Google Workspaces](https://developers.google.com/workspace) resources via the Google API, one needs to enable the API access and get a proper authentication credentials. Different APIs are provided for teh different resources (drive, gmail, sheet, etc.).
 
-For authentication to Google Workspaces one needs the the application configurations file from APIs Console. Check the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python) to obtain a `client_secret.json` (same as`credentials.json`) file for your project. PyDrive2 also explains how to get the file [here](https://docs.iterative.ai/PyDrive2/quickstart/#authentication).
+For authentication to Google Workspaces one needs the the application configurations file from APIs Console. Check the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python) to obtain a `client_secret.json` (same as `credentials.json`) file for your project. PyDrive2 also explains how to get the file [here](https://docs.iterative.ai/PyDrive2/quickstart/#authentication).
 
 All access to Google API requires authentication; usually the workflow is as follows:
 
@@ -369,7 +378,7 @@ $ python ./gg_drive_download.py 1mttf61NwuFNY25idwWw5AKzV3tQQbwlMp980i-9vnkK3PIV
 
 This script is a new and simpler version of the one in [this repo](https://github.com/ssardina-teaching/google-assignment-submission).
 
-## Some useful commands
+## Useful shell commands
 
 Once all git repos have been cloned in `git-submissions/`, one can build zip files from the submissions into directory `zip-submissions/` as follows:
 
@@ -394,3 +403,7 @@ To copy just the new zip files:
 ```bash
 rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project-4/zip-submissions/
 ```
+
+## Contributors
+
+- Prof. Sebastian Sardina (ssardina@gmail.com)
