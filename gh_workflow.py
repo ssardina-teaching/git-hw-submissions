@@ -36,7 +36,7 @@ from util import (
     NOW_TXT,
     LOGGING_DATE,
     LOGGING_FMT,
-    GH_URL_PREFIX,
+    GH_HTTP_URL_PREFIX,
 )
 
 from datetime import datetime
@@ -86,7 +86,7 @@ def delete_workflow(
         repo_no = r["NO"]
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
@@ -156,7 +156,7 @@ def start_workflow(
         repo_no = r["NO"]
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
@@ -291,7 +291,7 @@ def get_jobs(
         repo_no = r["NO"]
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )

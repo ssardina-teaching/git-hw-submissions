@@ -4,7 +4,9 @@ from github import Github, Repository, Organization, GithubException, Auth
 
 import git
 
-GH_URL_PREFIX = "https://github.com"
+GH_HTTP_URL_PREFIX = "https://github.com"
+GH_GIT_URL_PREFIX = "git@github.com:"
+
 
 # get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
 from datetime import datetime, timezone

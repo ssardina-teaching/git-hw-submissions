@@ -29,7 +29,7 @@ from util import (
     NOW_ISO,
     LOGGING_DATE,
     LOGGING_FMT,
-    GH_URL_PREFIX,
+    GH_HTTP_URL_PREFIX,
 )
 from datetime import datetime
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             continue
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 
         repo = g.get_repo(repo_name)

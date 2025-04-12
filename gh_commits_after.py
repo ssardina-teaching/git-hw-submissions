@@ -33,7 +33,7 @@ from util import (
     NOW_ISO,
     LOGGING_DATE,
     LOGGING_FMT,
-    GH_URL_PREFIX,
+    GH_HTTP_URL_PREFIX,
 )
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         repo_no = r["NO"]
         repo_id = r["REPO_ID"]
         repo_name = r["REPO_NAME"]
-        repo_url = f"{GH_URL_PREFIX}/{repo_name}"
+        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
