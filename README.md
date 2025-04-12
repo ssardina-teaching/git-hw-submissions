@@ -4,7 +4,7 @@ This repo contains useful scripts I developed over the years to support student'
 
 - [Teaching scripts](#teaching-scripts)
   - [Setup](#setup)
-  - [GitHub \& GitHub Classrooms](#github--github-classrooms)
+  - [GitHub Scripts](#github-scripts)
     - [Manual testing at development](#manual-testing-at-development)
     - [`gh_classroom_collect.py`: collect repos from a GH Organizations](#gh_classroom_collectpy-collect-repos-from-a-gh-organizations)
     - [`gh_authors_collect.py`: extract commits per author](#gh_authors_collectpy-extract-commits-per-author)
@@ -16,11 +16,12 @@ This repo contains useful scripts I developed over the years to support student'
     - [`gh_pr_feedback_comment.py`: push comments to repo's PRs](#gh_pr_feedback_commentpy-push-comments-to-repos-prs)
     - [`gh_workflow.py`: run automarking workflow](#gh_workflowpy-run-automarking-workflow)
     - [`gh_commit_after.py`: get commits after a date](#gh_commit_afterpy-get-commits-after-a-date)
+    - [`ghc_build_reporter.py`: build YAML classroom reporter](#ghc_build_reporterpy-build-yaml-classroom-reporter)
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
   - [`git_revert.py`: revert commits done late](#git_revertpy-revert-commits-done-late)
-  - [Google Tools](#google-tools)
+  - [Google Scripts](#google-scripts)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
     - [`gg_sheet_submissions.py`: download submissions from Google Sheets](#gg_sheet_submissionspy-download-submissions-from-google-sheets)
     - [`gg_drive_download.py`: download files in Drive folder](#gg_drive_downloadpy-download-files-in-drive-folder)
@@ -41,7 +42,7 @@ The libraries used are:
 - gitpython: http://www.legendu.net/misc/blog/hands-on-GitPython/
 - gh API CLI tool: https://github.com/cli/cli ([manual](https://cli.github.com/manual/))
 
-## GitHub & GitHub Classrooms
+## GitHub Scripts
 
 These `gh_xxx.py` scripts mostly use [PyGithub](https://github.com/PyGithub/PyGithub). Scripts will require a GitHub access token that allows access the corresponding repos/organization.
 
@@ -209,6 +210,54 @@ $ python ../../tools/git-hw-submissions.git/gh_commits_after.py -t /home/ssardin
 
 This was used to revert back to a previous commit before a deadline when the student has (illegally) push more changes after a deadline.
 
+### `ghc_build_reporter.py`: build YAML classroom reporter
+
+Builds the section for the [classroom-resources/autograding-grading-reporter@v1](https://github.com/classroom-resources/autograding-grading-reporter) runner from the definition of the tests. It is too cumbersome to do it manually! 😉
+
+```yaml
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        LIVE_RESULTS: "${{steps.live.outputs.result}}"
+        MESSI_RESULTS: "${{steps.messi.outputs.result}}"
+        MAP-SOUND_RESULTS: "${{steps.map-sound.outputs.result}}"
+        MAP-OPTIMAL_RESULTS: "${{steps.map-optimal.outputs.result}}"
+      with:
+        runners: live,messi,map-sound,map-optimal
+```
+
+Also reports the total marks in the automarking.
+
+An example of a run:
+
+```shell
+$ python ../../tools/git-hw-submissions.git/ghc_build_reporter.py workshop-4-ssardina.git/.github/workflows/classroom.yml
+Total marks:  100                                                                                                     │* 2732b6e - (HEAD -> main, origin/main, origin/HEAD) Much better automarking; run-name and sha inputs (18 hours ago) <
+                                                                                                                      │ssardina>
+- name: Autograding Reporter                                                                                          │* 7f89ba2 - solving diet puzzle (4 days ago) <Dev Bakshi>
+  uses: classroom-resources/autograding-grading-reporter@v1                                                           │* 77e99c8 - implementing class scheduling (4 days ago) <Dev Bakshi>
+  env:                                                                                                                │* fa68569 - using set for predicates (4 days ago) <Dev Bakshi>
+        SHOP_4_RESULTS: ${{steps.shop_4.outputs.result}}                                                              │* 1c283a1 - adding shop for iten predicate (4 days ago) <Dev Bakshi>
+        SHOPS_FOR_ITEM_2_RESULTS: ${{steps.shops_for_item_2.outputs.result}}                                          │* b81a363 - add deadline (3 weeks ago) <github-classroom[bot]>
+        SHOPS_FOR_ITEMS_2_RESULTS: ${{steps.shops_for_items_2.outputs.result}}                                        │* 726a5f8 - Setting up GitHub Classroom Feedback (3 weeks ago) <github-classroom[bot]>
+        INTERSECTION_3_RESULTS: ${{steps.intersection_3.outputs.result}}                                              │* 4ec8cc2 - (origin/feedback) GitHub Classroom Feedback (3 weeks ago) <github-classroom[bot]>
+        DIFF_3_RESULTS: ${{steps.diff_3.outputs.result}}                                                              │* 1c26843 - Initial release IDM25 (3 weeks ago) <ssardina>
+        UNION_3_RESULTS: ${{steps.union_3.outputs.result}}                                                            │❯ gitlog
+        WHERE-LIVE_RESULTS: ${{steps.where-live.outputs.result}}                                                      │* b98e5ff - (HEAD -> main, origin/main, origin/HEAD) Revert "adding shop for iten predicate" (6 seconds ago) <ssardina
+        MAP_COLORING_RESULTS: ${{steps.map_coloring.outputs.result}}                                                  │>
+        CLASS_SCHEDULING_RESULTS: ${{steps.class_scheduling.outputs.result}}                                          │* 2732b6e - Much better automarking; run-name and sha inputs (19 hours ago) <ssardina>
+        DIET_RESULTS: ${{steps.diet.outputs.result}}                                                                  │* 7f89ba2 - solving diet puzzle (4 days ago) <Dev Bakshi>
+        DIET-Q1_RESULTS: ${{steps.diet-q1.outputs.result}}                                                            │* 77e99c8 - implementing class scheduling (4 days ago) <Dev Bakshi>
+        DIET-Q2_RESULTS: ${{steps.diet-q2.outputs.result}}                                                            │* fa68569 - using set for predicates (4 days ago) <Dev Bakshi>
+        DIET-Q3_RESULTS: ${{steps.diet-q3.outputs.result}}                                                            │* 1c283a1 - adding shop for iten predicate (4 days ago) <Dev Bakshi>
+  with:                                                                                                               │* b81a363 - add deadline (3 weeks ago) <github-classroom[bot]>
+    runners: shop_4,shops_for_item_2,shops_for_items_2,intersection_3,diff_3,union_3,where-live,map_coloring,class_sch│* 726a5f8 - Setting up GitHub Classroom Feedback (3 weeks ago) <github-classroom[bot]>
+eduling,diet,diet-q1,diet-q2,diet-q3          
+``` 
+
+Then one can copy and paste this in the `classroom.yaml` workflow file.
+
+
 ## Git Tools
 
 These tools use [GitPython](https://gitpython.readthedocs.io/en/stable/tutorial.html) module to have Git API in Python.
@@ -262,7 +311,7 @@ $ python ../../tools/git-hw-submissions.git/git_revert.py submissions/deltaechov
 >[!NOTE]
 > Generally you get the commit to go back by getting the last commit until a certain date (deadline). You can use script [`gh_commits_after.py`](#gh_commit_afterpy-get-commits-after-a-date) to get that for a collection of repos.
 
-## Google Tools
+## Google Scripts
 
 To access [Google Workspaces](https://developers.google.com/workspace) resources via the Google API, one needs to enable the API access and get a proper authentication credentials. Different APIs are provided for teh different resources (drive, gmail, sheet, etc.).
 
