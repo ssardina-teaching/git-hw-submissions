@@ -19,6 +19,7 @@ This repo contains useful scripts I developed over the years to support student'
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
+  - [`git_revert.py`: revert commits done late](#git_revertpy-revert-commits-done-late)
   - [Google Tools](#google-tools)
     - [`gg_get_worksheet.py`: download Google Sheet worksheet as CSV file](#gg_get_worksheetpy-download-google-sheet-worksheet-as-csv-file)
     - [`gg_sheet_submissions.py`: download submissions from Google Sheets](#gg_sheet_submissionspy-download-submissions-from-google-sheets)
@@ -249,6 +250,17 @@ The timezone used is defined by constant `TIMEZONE` in the script (defaults to `
 ### `git_batch_commit.sh`: bulk commit and push to repos
 
 This script allows to commit and push changes to a collection of repos that already exist in a folder. This is useful to make edits to students' repos after they have been created.
+
+## `git_revert.py`: revert commits done late
+
+Sometime we want to revert back to some previous commit, for example, if the student has done late work which has already been autograder by the workflow.
+
+```shell
+$ python ../../tools/git-hw-submissions.git/git_revert.py submissions/deltaechovictor101/ b81a363 --keep .github
+```
+
+>[!NOTE]
+> Generally you get the commit to go back by getting the last commit until a certain date (deadline). You can use script [`gh_commits_after.py`](#gh_commit_afterpy-get-commits-after-a-date) to get that for a collection of repos.
 
 ## Google Tools
 
