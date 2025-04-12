@@ -57,10 +57,10 @@ if __name__ == '__main__':
     # Process each repo in list_repos
     # push wiki template if
     for r in list_repos:
-        print(f'*** Processing repo {r["REPO_NAME"]}')
+        print(f'*** Processing repo {r["REPO_ID"]}')
 
         # get the specific link for the Wiki
-        wiki_repo = f'git@github.com:{r["REPO_NAME"]}.wiki.git'
+        wiki_repo = f'git@github.com:{r["REPO_ID"]}.wiki.git'
         print(f'\t*** Wiki name: {wiki_repo}')
 
         # fresh clone of student wiki repo into folder WIKI_DIR/
@@ -80,9 +80,9 @@ if __name__ == '__main__':
             repo.index.commit('Init Wiki template. Enjoy!')
             try:
                 repo.remotes.origin.push()
-                print(f'\t\t Success pushing wiki template into https://github.com/{r["REPO_NAME"]}/wiki')
+                print(f'\t\t Success pushing wiki template into https://github.com/{r["REPO_ID"]}/wiki')
             except:
-                print(f'\t\t Error pushing repo {r["REPO_NAME"]}')
+                print(f'\t\t Error pushing repo {r["REPO_ID"]}')
         else:
             print(
                 f"\t\t Skipping repo wiki as it was created by user {commits[0].author} and has {len(commits)} commits")

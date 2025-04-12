@@ -198,7 +198,7 @@ def get_stats_contrib_repo_all(g: Github, repo_name):
 if __name__ == "__main__":
     parser = ArgumentParser(
         description="Extract no of commits per author in a collection of repositories given as a CSV file"
-        "CSV HEADERS: ORG_NAME, REPO_ID_PREFIX, REPO_ID_SUFFIX, REPO_NAME, REPO_GIT"
+        "CSV HEADERS: ORG_NAME, REPO_ID_PREFIX, REPO_ID_SUFFIX, REPO_ID, REPO_GIT"
     )
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
@@ -247,13 +247,13 @@ if __name__ == "__main__":
     # Process each repo in list_repos
     authors_stats = []
     for r in list_repos:
-        repo_id = r["REPO_ID_SUFFIX"]
-        repo_name = r["REPO_NAME"]
+        repo_id = r["REPO_ID_SUFFIX"] # ssardina
+        repo_name = r["REPO_ID"] # workshop-6/ssardina
         repo_url = f"https://github.com/{repo_name}"
         logging.info(f"Processing repo {repo_id} ({repo_url})...")
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(
-                g, r["REPO_NAME"], sha=args.tag, gh_contributions=args.gh_contributions
+                g, r["REPO_ID"], sha=args.tag, gh_contributions=args.gh_contributions
             )
         except Exception as e:
             logging.info(f"\t Exception repo {repo_id}: {e}")

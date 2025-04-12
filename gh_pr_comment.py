@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
         repo_no = r["NO"]
         repo_id = r["REPO_ID_SUFFIX"].lower()
-        repo_name = r["REPO_NAME"]
+        repo_name = r["REPO_ID"]
         # repo_url = f"https://github.com/{repo_name}"
         repo_url = r["REPO_HTTP"]
         logger.info(

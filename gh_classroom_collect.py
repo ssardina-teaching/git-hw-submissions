@@ -46,7 +46,7 @@ CSV_GITHUB_IDENTIFIER = "identifier"
 if __name__ == "__main__":
     parser = ArgumentParser(
         description="Extract repos in a GitHub Classroom repositories for a given assignment into a CSV file"
-        "CSV HEADERS: ORG_NAME, REPO_ID_PREFIX, REPO_ID_SUFFIX, REPO_NAME, REPO_GIT"
+        "CSV HEADERS: ORG_NAME, REPO_ID_PREFIX, REPO_ID_SUFFIX, REPO_ID, REPO_GIT"
     )
     parser.add_argument("ORG_NAME", help="Organization name for GitHub Classroom")
     parser.add_argument("REPO_ID_PREFIX", help="Prefix string for the assignment.")
@@ -134,8 +134,8 @@ if __name__ == "__main__":
             logger.info(f"Found repo {repo.full_name}")
             repos_select.append(
                 {
-                    "REPO_SUFFIX": match.group(1),
-                    "REPO_NAME": repo.full_name,
+                    "REPO_ID_SUFFIX": match.group(1),
+                    "REPO_ID": repo.full_name,
                     "REPO_URL": repo.ssh_url,
                     "REPO_HTTP": repo.html_url,
                 }
@@ -151,20 +151,19 @@ if __name__ == "__main__":
         )
         csv_writer.writeheader()
 
+        repos_select.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())  # sort the list of teams
         # for each repo in repo_select produce a row in the CSV file, add the team name from mapping
-        for row in repos_select:
+        for k, row in enumerate(repos_select, start=1):
             # if there is a mapping from a repo suffix to a REPO_ID_SUFFIX, do it; otherwise use SUFFIX directly
             if args.student_map:
-                if row["REPO_SUFFIX"] in user_to_id_map.keys():
-                    row["REPO_SUFFIX"] = user_to_id_map[row["REPO_SUFFIX"]]
+                if row["REPO_ID_SUFFIX"] in user_to_id_map.keys():
+                    row["REPO_ID_SUFFIX"] = user_to_id_map[row["REPO_ID_SUFFIX"]]
                 else:
                     logger.warning(
-                        f"Repo {row['REPO_NAME']} with suffix {row['REPO_SUFFIX']} has no mapping. Using suffix directly."
+                        f"Repo {row['REPO_ID']} with suffix {row['REPO_ID_SUFFIX']} has no mapping. Using suffix directly."
                     )
-
+            row['NO'] = k
             row["ORG_NAME"] = args.ORG_NAME
             row["REPO_ID_PREFIX"] = args.REPO_ID_PREFIX
-            row["REPO_ID_SUFFIX"] = row.pop(
-                "REPO_SUFFIX"
-            ).lower()  # rename key REPO_SUFFIX to REPO_ID_SUFFIX in the dictionary
+            row["REPO_ID_SUFFIX"] = row["REPO_ID_SUFFIX"].lower()
             csv_writer.writerow(row)

@@ -152,7 +152,7 @@ if __name__ == "__main__":
         # get the current repo data
         repo_no = r["NO"]
         repo_id = r["REPO_ID_SUFFIX"]
-        repo_name = r["REPO_NAME"]
+        repo_name = r["REPO_ID"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."

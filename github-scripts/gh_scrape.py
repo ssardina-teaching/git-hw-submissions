@@ -14,8 +14,8 @@ queries = [{'type': 'filename', 'search': 'searchAgents.py'}]
 
 # queries = ['pacman berkeley']
 
-search_repo_header = ["repo_name", "name", "login", "email"]
-search_code_header = ["repo_name", "name", "login", "email", "filename", "url"]
+search_repo_header = ["REPO_ID", "name", "login", "email"]
+search_code_header = ["REPO_ID", "name", "login", "email", "filename", "url"]
 
 repos = []
 

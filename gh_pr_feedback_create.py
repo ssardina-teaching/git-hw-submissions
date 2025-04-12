@@ -128,7 +128,7 @@ if __name__ == "__main__":
     errors = []
     for k, r in enumerate(list_repos):
         repo_id = r["REPO_ID_SUFFIX"]
-        repo_name = r["REPO_NAME"]
+        repo_name = r["REPO_ID"]
         repo_url = f"https://github.com/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 

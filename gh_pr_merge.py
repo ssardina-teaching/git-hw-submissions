@@ -100,7 +100,7 @@ if __name__ == "__main__":
         if args.start is not None and k < args.start:
             continue
         repo_id = r["REPO_ID_SUFFIX"]
-        repo_name = r["REPO_NAME"]
+        repo_name = r["REPO_ID"]
         repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
 

@@ -24,12 +24,13 @@ CSV_REPO_ID_SUFFIX = "REPO_ID_SUFFIX"
 GH_HTTP_URL_PREFIX = "https://github.com"
 GH_GIT_URL_PREFIX = "git@github.com:"
 REPOS_HEADER_CSV = [
-    "ORG_NAME",
-    "REPO_ID_PREFIX",
-    "REPO_ID_SUFFIX",
-    "REPO_NAME",
-    "REPO_URL",
-    "REPO_HTTP",
+    "NO",   # 1, 2, 3, ...
+    "ORG_NAME",  # RMIT-COSC2780-2973-IDM25
+    "REPO_ID_PREFIX",  # workshop-6
+    "REPO_ID_SUFFIX",  # ssardina
+    "REPO_ID",  # workshop-6/ssardina
+    "REPO_URL",  # git@github.com:RMIT-COSC2780-2973-IDM25/workshop-6/ssardina.git
+    "REPO_HTTP",  # htpps://github.com/RMIT-COSC2780-2973-IDM25/workshop-6/ssardina.git
 ]
 
 
@@ -41,16 +42,17 @@ def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
     :param csv_file: file where csv data is with two fields TEAM and GIT
     :param repos_ids: list of specific repo names or None
     :return: a list of dictionaries for each repo (name, url, etc)
-            e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'REPO_ID_PREFIX': 'p0-warmup', 'REPO_ID_SUFFIX': 'msardina', 'REPO_NAME': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
+            e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'REPO_ID_PREFIX': 'p0-warmup', 'REPO_ID_SUFFIX': 'msardina', 'REPO_ID': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
     """
 
     # Get the list of ALL teams with their GIT URL from the CSV file
     with open(csv_file, "r") as f:
         repos = list(csv.DictReader(f, delimiter=","))
 
-    # Add enumeration as new field NO
-    for i, t in enumerate(repos):
-        t["NO"] = i + 1
+    # Add enumeration as new field NO, if not there already
+    if "NO" not in repos[0]:
+        for i, t in enumerate(repos):
+            t["NO"] = i + 1
 
     # If specific team ids given, just keep those them only
     if repos_ids is not None:

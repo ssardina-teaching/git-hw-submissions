@@ -115,7 +115,7 @@ if __name__ == "__main__":
     forced_pr = []  # repos that have forced push
     for k, r in enumerate(list_repos, start=1):
         row = r["REPO_ID_SUFFIX"]
-        repo_name = r["REPO_NAME"]
+        repo_name = r["REPO_ID"]
         repo_url = f"{GH_URL_PREFIX}/{repo_name}"
         logging.info(f"Processing repo {k}/{no_repos}: {row} ({repo_url})...")
 
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     merged_pr.sort()
     with open(CSV_MERGED, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "PR_URL"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_ID", "PR_URL"])
         writer.writerows([row for row in merged_pr])
 
     logging.info(f"Repos that have forced push: \n\t {forced_pr}.")
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     forced_pr.sort()
     with open(CSV_FORCED_PUSH, "w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["REPO_ID_SUFFIX", "REPO_NAME", "PR_URL"])
+        writer.writerow(["REPO_ID_SUFFIX", "REPO_ID", "PR_URL"])
         writer.writerows([row for row in merged_pr])
 
     for row in forced_pr:
