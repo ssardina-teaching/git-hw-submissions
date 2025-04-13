@@ -10,38 +10,40 @@ Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in
 """
 
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2024"
+__copyright__ = "Copyright 2024-2025"
 
 import csv
-
 from argparse import ArgumentParser
-import util
 from typing import List
+from datetime import datetime
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
 
+import util
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_ISO,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+    GH_HTTP_URL_PREFIX,
+)
+
+
 import logging
 import coloredlogs
 
-from datetime import datetime
-from zoneinfo import ZoneInfo  # this should work Python 3.9+
-
-TIMEZONE_STR = "Australia/Melbourne"
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
-
-
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+# LOGGING_LEVEL = logging.DEBUG
+# logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
-
-GH_URL_PREFIX = "https://github.com/"
-CSV_ISSUES = "pr_errors.csv"
-CSV_MISSING = "pr_missing.csv"
+CSV_OUTPUT = "pr_create.csv"
+CSV_HEADER = ["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"]
 
 
 MESSAGE_PR = """
@@ -68,7 +70,9 @@ Subscribed: @{GH_USERNAME}
 if __name__ == "__main__":
     parser = ArgumentParser(description="Merge PRs in multiple repos")
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
-    parser.add_argument("BASE_SHA", help="Base SHA to create feedback branch from.")
+    parser.add_argument(
+        "BASE_SHA", nargs="?", help="Base SHA to create feedback branch from (Defaults to first commit in main)."
+    )
     parser.add_argument(
         "--repos", nargs="+", help="if given, only the teams specified will be parsed."
     )
@@ -90,31 +94,27 @@ if __name__ == "__main__":
         default=False,
         help="Dump results into CSV files (Default: %(default)s.)",
     )
-
     args = parser.parse_args()
+    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO}\n")
 
-    now = datetime.now(TIMEZONE).isoformat()
-    logging.info(f"Starting on {TIMEZONE}: {now}\n")
-
-    # Get the list of TEAM + GIT REPO links from csv file
+    ###############################################
+    # Filter repos as desired
+    ###############################################
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
-
     if len(list_repos) == 0:
-        logging.error(
-            f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.'
-        )
+        logger.error(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
 
     ###############################################
     # Authenticate to GitHub
     ###############################################
     if not args.token_file and not (args.user or args.password):
-        logging.error("No authentication provided, quitting....")
+        logger.error("No authentication provided, quitting....")
         exit(1)
     try:
         g = util.open_gitHub(token_file=args.token_file)
     except:
-        logging.error(
+        logger.error(
             "Something wrong happened during GitHub authentication. Check credentials."
         )
         exit(1)
@@ -124,22 +124,30 @@ if __name__ == "__main__":
     ###############################################
     authors_stats = []
     no_repos = len(list_repos)
-    missing_pr = []
-    errors = []
-    for k, r in enumerate(list_repos):
+    output_csv = []
+    for k, r in enumerate(list_repos, start=1):
+        repo_no = r["NO"]
         repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_ID"]
-        repo_url = f"https://github.com/{repo_name}"
-        logging.info(f"Processing repo {k}/{no_repos}: {repo_id} ({repo_url})...")
+        repo_url = r["REPO_HTTP"]
+        logger.info(
+            f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
+        )
 
         repo = g.get_repo(repo_name)
 
         # first check that no force-pushed has over-written main branch
         commits = repo.get_commits("main")
         first_commit_main = commits[commits.totalCount - 1]
+
+        # if no sha given, use the first commit in main
+        if args.BASE_SHA is None:
+            args.BASE_SHA = first_commit_main.sha
+            logger.info(f"\t First commit in main is {first_commit_main.sha[:7]}.")
+
         if first_commit_main.sha != args.BASE_SHA:
-            logging.error(f"\t First commit is different from expected, forced pushed?")
-            errors.append([repo_id, repo_url, "forced", first_commit_main.sha])
+            logger.error(f"\t First commit is different from expected, forced pushed?")
+            output_csv.append([repo_id, repo_url, "error_forced", first_commit_main.sha])
             continue
 
         # OK first commit in main exists, let's check if the PR exists and create it if not
@@ -147,33 +155,33 @@ if __name__ == "__main__":
             pr_feedback = repo.get_pull(number=1)  # get the first PR - feedback
 
             if pr_feedback.title != "Feedback":
-                logging.error(f"\t PR with different title {pr_feedback.title}")
-                errors.append([repo_id, repo_url, "title", pr_feedback.title])
+                logger.error(f"\t PR with different title {pr_feedback.title}")
+                output_csv.append([repo_id, repo_url, "error_title", pr_feedback.title])
                 continue
 
             if pr_feedback.merged:
-                logging.info(f"\t PR Feedback merged!!! {pr_feedback}")
-                errors.append([repo_id, repo_url, "merged", ""])
+                logger.info(f"\t PR Feedback merged!!! {pr_feedback}")
+                output_csv.append([repo_id, repo_url, "error_merged", ""])
                 continue
         except GithubException as e:
             if e.status == 404:
-                logging.error(
+                logger.error(
                     f"\t No Feedback PR #1 found in repo {repo_name}. We will create it..."
                 )
             else:
-                logging.error(f"\t Unknown getting PR Feedback: {e}")
-                errors.append([repo_id, repo_url, "get-PR", e])
+                logger.error(f"\t Unknown getting PR Feedback: {e}")
+                output_csv.append([repo_id, repo_url, "excepton_get_pr", e])
                 continue
 
             # we know PR is missing, so we will create it
             if args.dry_run:
-                # logging.info(
+                # logger.info(
                 #     f"\t Dry run!!!: Would create feedback branch at SHA {args.BASE_SHA} and Feedback PR with body: \n \t {MESSAGE_PR.format(GH_USERNAME=repo_id)}."
                 # )
-                logging.info(
-                    f"\t Dry run!!!: Would create feedback branch at SHA {args.BASE_SHA} and Feedback PR."
+                logger.info(
+                    f"\t Dry run!!!: Would create feedback branch at SHA {args.BASE_SHA[:7]} and Feedback PR."
                 )
-                missing_pr.append([repo_id, repo_url, "dry-run", ""])
+                output_csv.append([repo_id, repo_url, "dry-run", ""])
                 continue
 
             # first, create a feedback branch from the base SHA
@@ -181,10 +189,10 @@ if __name__ == "__main__":
                 repo.create_git_ref("refs/heads/feedback", args.BASE_SHA)
             except GithubException as e:
                 if e.data["message"] == "Reference already exists":
-                    logging.info(f"\t Branch feedback already exists.")
+                    logger.info(f"\t Branch feedback already exists.")
                 else:
-                    logging.error(f"\t Error creating branch feedback: {e}")
-                    errors.append([repo_id, repo_url, "create-branch", e])
+                    logger.error(f"\t Error creating branch feedback: {e}")
+                    output_csv.append([repo_id, repo_url, "exception_createa_branch", e])
                     continue
 
             # second, create a PR for feedback branch
@@ -196,44 +204,34 @@ if __name__ == "__main__":
                     base="feedback",
                 )
             except GithubException as e:
-                logging.error(f"\t Exception when creating PR in repo {repo_name}: {e}")
-                missing_pr.append([repo_id, repo_url, "pr-create", e])
+                logger.error(f"\t Exception when creating PR in repo {repo_name}: {e}")
                 if e.data["message"] == "Validation Failed":
-                    logging.error(f"\t Perhaps no commits exist in repo.")
-                    errors.append([repo_id, repo_url, "validation-pr", e])
+                    logger.error(f"\t Perhaps no commits exist in repo.")
+                    output_csv.append(
+                        [repo_id, repo_url, "exception_validation", e]
+                    )
                 else:
-                    errors.append([repo_id, repo_url, "create-pr", e])
+                    output_csv.append([repo_id, repo_url, "exception_create", e])
                     break
                 continue
 
-                # all good!
-            missing_pr.append([repo_id, repo_url, "created", ""])
+            # all good! PR was created SUCCESSFULLY!
+            output_csv.append([repo_id, repo_url, "created", ""])
 
     # print summary stats
-    no_merged = len([x for x in errors if x[2] == "merged"])
-    logging.info(
-        f"Finished! Total repos: {no_repos} - Merged PR: {no_merged} - Missing PR: {len(missing_pr)} - Errors: {len(errors)}."
+    no_merged = len([x for x in output_csv if x[2] == "error_merged"])
+    no_errors = len([x for x in output_csv if x[2] != "created"])
+    logger.info(
+        f"Finished! Total repos: {no_repos} - Merged PR: {no_merged} - Missing PR: {len(output_csv)} - Errors: {no_errors}."
     )
-    if missing_pr:
-        logging.info(
-            f"Repos without the Feedback PR: {' '.join([x[0] for x in missing_pr])}"
-        )
-        for r in missing_pr:
-            print(r)
-    else:
-        logging.info(f"All repos have their Feedback PRs!")
-
-    if args.csv:
+    output_csv = sorted(output_csv, key=lambda x: x[2])
+    if args.csv and len(output_csv) > 0:
         # Write error CSV file
-        with open(CSV_ISSUES, "w", newline="") as file:
+        with open(CSV_OUTPUT, "w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"])
-            writer.writerows(errors)
-        logging.info(f"Errors written to {CSV_ISSUES}.")
+            writer.writerows(output_csv)
 
-        # Write error CSV file
-        with open(CSV_MISSING, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"])
-            writer.writerows(errors)
-        logging.info(f"Missing PR repos written to {CSV_MISSING}.")
+        logger.info(f"Output written to CSF file: {CSV_OUTPUT}.")
+
+    for r in output_csv:
+        print(r)
