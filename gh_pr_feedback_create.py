@@ -139,6 +139,7 @@ if __name__ == "__main__":
 
         # first check that no force-pushed has over-written main branch
         commits = repo.get_commits("main")
+        no_commits = commits.totalCount
         first_commit_main = commits[commits.totalCount - 1]
 
         # if no sha given, use the first commit in main
@@ -191,7 +192,7 @@ if __name__ == "__main__":
                 output_csv.append([repo_id, repo_url, "dry-run", {base_sha[:7]}])
                 continue
 
-            # first, create a feedback branch from the base SHA
+            # FIRST, create a feedback branch from the base SHA
             try:
                 repo.create_git_ref("refs/heads/feedback", base_sha)
                 logger.info(
@@ -202,20 +203,46 @@ if __name__ == "__main__":
                     logger.info(f"\t Branch 'feedback' already exists.")
                 else:
                     logger.error(f"\t Error creating branch 'feedback': {e}")
-                    output_csv.append([repo_id, repo_url, "exception_createa_branch", e])
+                    output_csv.append([repo_id, repo_url, "exception_create_branch", e])
                     continue
 
-            # second, create a PR for feedback branch
+            # SECOND, create a PR for feedback branch
+            # there must be at least one commit in the main to be able to PR into a feedback PR - create a dummy commit otherwise
+            if no_commits == 1:
+                logger.warning(f"\t No commits in main branch yet, need to create a dummy one to create PR.")
+                keep_file = ".github/keep"
+                keep_content = " "
+                # Check if the file already exists
+                try:
+                    existing_file = repo.get_contents(keep_file)
+                    # File exists – update it
+                    repo.update_file(
+                        path=keep_file,
+                        message="Setting up GitHub Classroom Feedback",
+                        content=keep_content,
+                        sha=existing_file.sha,
+                    )
+                except Exception:
+                    # File does not exist – create it
+                    repo.create_file(
+                        path=keep_file,
+                        message="Setting up GitHub Classroom Feedback",
+                        content=keep_content,
+                    )
+                    
+                logger.info(f"\t Dummy file {keep_file} was updated/created.")
+            # time to create the PR
             try:
                 repo.create_pull(
                     title="Feedback",
                     body=MESSAGE_PR.format(GH_USERNAME=repo_id),
                     head="main",
-                    base="feedback",
+                    base="feedback",    # {R from main to feedback
                 )
             except GithubException as e:
                 logger.error(f"\t Exception when creating PR in repo {repo_name}: {e}")
                 if e.data["message"] == "Validation Failed":
+                    # This should not happen anymore as we create a dummy commit in main to be able to PR into feedback
                     logger.error(f"\t Perhaps no commits exist in repo.")
                     output_csv.append(
                         [repo_id, repo_url, "exception_validation", e]
