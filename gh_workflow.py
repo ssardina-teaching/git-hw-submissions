@@ -157,7 +157,7 @@ def start_workflow(
         repo_no = r["NO"]
         repo_id = r["REPO_ID_SUFFIX"]
         repo_name = r["REPO_ID"]
-        repo_url = f"{GH_HTTP_URL_PREFIX}/{repo_name}"
+        repo_url = r["REPO_HTTP"]
         logger.info(
             f"Processing repo {k}/{no_repos}: {repo_no}:{repo_id} ({repo_url})..."
         )
