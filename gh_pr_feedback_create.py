@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         # OK first commit in main exists, let's check if the PR exists and create it if not
         try:
-            pr_feedback = repo.get_pull(number=1)  # get the first PR - feedback
+            pr_feedback = repo.get_pull(number=1)  
 
             if pr_feedback.title != "Feedback":
                 logger.error(f"\t PR with different title {pr_feedback.title}")
@@ -163,34 +163,45 @@ if __name__ == "__main__":
                 output_csv.append([repo_id, repo_url, "error_merged", ""])
                 continue
         except GithubException as e:
+            # if we get here, there is no FEEDBACK PR #1!
+            # now we are talking...
             if e.status == 404:
-                logger.error(
+                logger.info(
                     f"\t No Feedback PR #1 found in repo {repo_name}. We will create it..."
                 )
             else:
-                logger.error(f"\t Unknown getting PR Feedback: {e}")
+                logger.error(f"\t Unknown exception getting PR Feedback: {e}")
                 output_csv.append([repo_id, repo_url, "excepton_get_pr", e])
                 continue
 
+            # get the slug to @mentioning in PR text
+            slug = repo_id
+            repo_teams = repo.get_teams()
+            if repo_teams.totalCount > 0:
+                # get the first team slug
+                slug = repo_teams[0].slug
+                logger.info(f"\t Using slug {slug} for @mentioning.")
+
             # we know PR is missing, so we will create it
             if args.dry_run:
-                # logger.info(
-                #     f"\t Dry run!!!: Would create feedback branch at SHA {base_sha} and Feedback PR with body: \n \t {MESSAGE_PR.format(GH_USERNAME=repo_id)}."
-                # )
+                pr_message = f"\t Dry run!!!: Would create feedback branch at SHA {base_sha} and Feedback PR with body: \n \t {MESSAGE_PR.format(GH_USERNAME=slug)}"
                 logger.info(
-                    f"\t Dry run!!!: Would create feedback branch at SHA {base_sha[:7]} and Feedback PR."
+                    f"\t Dry run!!!: Would create feedback branch at SHA {base_sha[:7]} and Feedback PR with following message:\n {pr_message}"
                 )
-                output_csv.append([repo_id, repo_url, "dry-run", ""])
+                output_csv.append([repo_id, repo_url, "dry-run", {base_sha[:7]}])
                 continue
 
             # first, create a feedback branch from the base SHA
             try:
                 repo.create_git_ref("refs/heads/feedback", base_sha)
+                logger.info(
+                    f"\t Created feedback branch at SHA {base_sha[:7]}."
+                )
             except GithubException as e:
                 if e.data["message"] == "Reference already exists":
-                    logger.info(f"\t Branch feedback already exists.")
+                    logger.info(f"\t Branch 'feedback' already exists.")
                 else:
-                    logger.error(f"\t Error creating branch feedback: {e}")
+                    logger.error(f"\t Error creating branch 'feedback': {e}")
                     output_csv.append([repo_id, repo_url, "exception_createa_branch", e])
                     continue
 
