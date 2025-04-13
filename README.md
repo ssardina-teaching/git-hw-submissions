@@ -25,6 +25,7 @@ Feel free to use them as desired. No guarantees and I am sure they will have bug
     - [`gh_workflow.py`: run automarking workflow](#gh_workflowpy-run-automarking-workflow)
     - [`gh_commit_after.py`: get commits after a date](#gh_commit_afterpy-get-commits-after-a-date)
     - [`ghc_build_reporter.py`: build YAML classroom reporter](#ghc_build_reporterpy-build-yaml-classroom-reporter)
+    - [`gh_user_access.py`: get repos and accesses of org](#gh_user_accesspy-get-repos-and-accesses-of-org)
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
@@ -266,6 +267,15 @@ eduling,diet,diet-q1,diet-q2,diet-q3
 
 Then one can copy and paste this in the `classroom.yaml` workflow file.
 
+### `gh_user_access.py`: get repos and accesses of org
+
+This script allows to get all repos in an organization and its contributors with their acceses (read/write/admin).
+
+```shell
+$ python ../tools/git-hw-submissions.git/gh_user_access.py -t ~/.ssh/keys/gh-token-ssardina.txt list RMIT-COSC2780-2973-IDM25 ssardina -s 1 -e 10 |& tee -a 2025.04.13.repo-org.log
+```
+
+This could be good to later inspect and handle users  who have dropped the course (may want to remove their access to the repos).
 
 ## Git Tools
 
