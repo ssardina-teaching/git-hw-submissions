@@ -8,7 +8,6 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
 Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in-python
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024-2025"
 
@@ -43,8 +42,7 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 CSV_OUTPUT = "pr_create.csv"
-CSV_HEADER = ["REPO_ID_SUFFIX", "REPO_URL", "ISSUE", "DETAILS"]
-
+CSV_HEADER = ["REPO_ID_SUFFIX", "REPO_URL", "RESULT", "DETAILS"]
 
 MESSAGE_PR = """
 :wave:! GitHub Classroom created this pull request as a place for your teacher to leave feedback on your work. It will update automatically. **Don’t close or merge this pull request**, unless you’re instructed to do so by your teacher.
@@ -95,7 +93,10 @@ if __name__ == "__main__":
         help="Dump results into CSV files (Default: %(default)s.)",
     )
     args = parser.parse_args()
-    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO}\n")
+    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO} - {args}")
+
+    if args.BASE_SHA is None:
+        logger.warning("No base SHA given, will use first commit in main.")
 
     ###############################################
     # Filter repos as desired
@@ -141,11 +142,9 @@ if __name__ == "__main__":
         first_commit_main = commits[commits.totalCount - 1]
 
         # if no sha given, use the first commit in main
-        if args.BASE_SHA is None:
-            args.BASE_SHA = first_commit_main.sha
-            logger.info(f"\t First commit in main is {first_commit_main.sha[:7]}.")
+        base_sha = args.BASE_SHA if args.BASE_SHA else first_commit_main.sha
 
-        if first_commit_main.sha != args.BASE_SHA:
+        if first_commit_main.sha != base_sha:
             logger.error(f"\t First commit is different from expected, forced pushed?")
             output_csv.append([repo_id, repo_url, "error_forced", first_commit_main.sha])
             continue
@@ -176,17 +175,17 @@ if __name__ == "__main__":
             # we know PR is missing, so we will create it
             if args.dry_run:
                 # logger.info(
-                #     f"\t Dry run!!!: Would create feedback branch at SHA {args.BASE_SHA} and Feedback PR with body: \n \t {MESSAGE_PR.format(GH_USERNAME=repo_id)}."
+                #     f"\t Dry run!!!: Would create feedback branch at SHA {base_sha} and Feedback PR with body: \n \t {MESSAGE_PR.format(GH_USERNAME=repo_id)}."
                 # )
                 logger.info(
-                    f"\t Dry run!!!: Would create feedback branch at SHA {args.BASE_SHA[:7]} and Feedback PR."
+                    f"\t Dry run!!!: Would create feedback branch at SHA {base_sha[:7]} and Feedback PR."
                 )
                 output_csv.append([repo_id, repo_url, "dry-run", ""])
                 continue
 
             # first, create a feedback branch from the base SHA
             try:
-                repo.create_git_ref("refs/heads/feedback", args.BASE_SHA)
+                repo.create_git_ref("refs/heads/feedback", base_sha)
             except GithubException as e:
                 if e.data["message"] == "Reference already exists":
                     logger.info(f"\t Branch feedback already exists.")
@@ -220,7 +219,7 @@ if __name__ == "__main__":
 
     # print summary stats
     no_merged = len([x for x in output_csv if x[2] == "error_merged"])
-    no_errors = len([x for x in output_csv if x[2] != "created"])
+    no_errors = len([x for x in output_csv if not x[2] in ["created", "dry-run"]])
     logger.info(
         f"Finished! Total repos: {no_repos} - Merged PR: {no_merged} - Missing PR: {len(output_csv)} - Errors: {no_errors}."
     )
@@ -228,10 +227,12 @@ if __name__ == "__main__":
     if args.csv and len(output_csv) > 0:
         # Write error CSV file
         with open(CSV_OUTPUT, "w", newline="") as file:
-            writer = csv.writer(file)
+            writer = csv.writer(file,quoting=csv.QUOTE_NONNUMERIC)
+            writer.writerow(CSV_HEADER)
             writer.writerows(output_csv)
 
         logger.info(f"Output written to CSF file: {CSV_OUTPUT}.")
 
-    for r in output_csv:
-        print(r)
+    # just for manual debug.. ouch!
+    # for r in output_csv:
+    #     print(r)
