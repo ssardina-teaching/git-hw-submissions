@@ -10,8 +10,9 @@ Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in
 
 Example:
 
-$ python gh_pr_feedback_comment.py repos.csv marking.csv reports  -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 |& tee -a pr_feedback.log
+$ python gh_pr_post_result.py -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 repos.csv marking.csv reports |& tee -a pr_feedback.log
 """
+
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024-2025"
 import csv
@@ -44,6 +45,7 @@ TIMEZONE = ZoneInfo(TIMEZONE_STR)
 
 import logging
 import coloredlogs
+
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
@@ -112,11 +114,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--repos", nargs="+", help="if given, only the teams specified will be parsed."
     )
+    parser.add_argument("--ignore", nargs="+", help="if given, ignore these repos.")
     parser.add_argument(
-        "--ghu", 
+        "--ghu",
         type=str,
-        default="GHU", 
-        help="if given, only the teams specified will be parsed (Default: %(default)s)."
+        default="GHU",
+        help="if given, only the teams specified will be parsed (Default: %(default)s).",
     )
     parser.add_argument(
         "--start",
@@ -160,14 +163,18 @@ if __name__ == "__main__":
         exit(1)
 
     if not Path(args.REPORT_FOLDER).is_dir():
-        logger.error(f"Report folder {args.REPORT_FOLDER} not found or not a directory.")
+        logger.error(
+            f"Report folder {args.REPORT_FOLDER} not found or not a directory."
+        )
         exit(1)
 
     ###############################################
     # Load feedback report builder module and marking spreadsheet
     # https://medium.com/@Doug-Creates/dynamically-import-a-module-by-full-path-in-python-bbdf4815153e
     ###############################################
-    spec = importlib.util.spec_from_file_location("module_name", args.CONFIG)
+    spec = importlib.util.spec_from_file_location(
+        "module_name", args.CONFIG, args.ignore
+    )
     module_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module_feedback)
     # Add the module to sys.modules
@@ -184,14 +191,13 @@ if __name__ == "__main__":
     ###############################################
     # Filter repos as desired
     ###############################################
-    # Get the list of TEAM + GIT REPO links from csv file
     list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
     if args.repos is None:
         end_no = args.end if args.end is not None else len(list_repos)
         list_repos = list_repos[args.start - 1 : end_no]
 
     if len(list_repos) == 0:
-        logger.error(f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.')
+        logger.error(f'No relevant repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
 
     ###############################################
