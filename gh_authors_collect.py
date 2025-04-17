@@ -23,32 +23,43 @@ import traceback
 import os
 
 from argparse import ArgumentParser
-import util
-from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
 
+# local utilities
+import util
+from util import (
+    GH_GIT_URL_PREFIX,
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_ISO,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+    GH_HTTP_URL_PREFIX,
+    DATE_FORMAT
+)
+
 import logging
 import coloredlogs
-
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+# LOGGING_LEVEL = logger.DEBUG
+# logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
+
 CSV_HEADER = ["REPO_ID_SUFFIX", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
-
 GH_URL_PREFIX = "https://github.com/"
-
 IGNORE_USERS = [
     "ssardina",
     "web-flow",
     "github-classroom[bot]",
     "axelahmer",
     "AndrewPaulChester",
+    "gourdoni",
 ]
 
 
@@ -140,7 +151,7 @@ def get_stats_contrib_repo(g: Github, repo_name, sha=None, gh_contributions=Fals
             repo_branches = repo.get_branches()
             for branch in repo_branches:
                 name_branch = branch.name
-                logging.debug("Processing branch: ", name_branch)
+                logger.debug("Processing branch: ", name_branch)
                 branch_commits = list(repo.get_commits(sha=name_branch))
                 repo_commits = repo_commits.union(
                     branch_commits
@@ -203,6 +214,11 @@ if __name__ == "__main__":
     parser.add_argument("REPO_CSV", help="List of repositories to get data from.")
     parser.add_argument("CSV_OUT", help="File to output the stats of authors.")
     parser.add_argument(
+        "-t",
+        "--token-file",
+        help="File containing GitHub authorization token/password.",
+    )
+    parser.add_argument(
         "--repos",
         nargs="+",
         help="if given, only the teams specified will be parsed.",
@@ -211,9 +227,10 @@ if __name__ == "__main__":
         "--tag", help="if given, check up to a given tag (otherwise all repo)."
     )
     parser.add_argument(
-        "-t",
-        "--token-file",
-        help="File containing GitHub authorization token/password.",
+        "--ignore",
+        nargs="+",
+        metavar="<list names>",
+        help="ignore these authors GH usernames (teachers).",
     )
     parser.add_argument(
         "--gh-contributions",
@@ -222,43 +239,62 @@ if __name__ == "__main__":
         help="Use GitHub contribution to main stats (Default: %(default)s).",
     )
     args = parser.parse_args()
+    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO} - {args}")
 
-    # Get the list of TEAM + GIT REPO links from csv file
-    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
-
-    if len(list_repos) == 0:
-        logging.warning(
+    ###############################################
+    # Filter repos as desired
+    ###############################################
+    repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
+    if len(repos) == 0:
+        logger.warning(
             f'No repos found in the mapping file "{args.REPO_CSV}". Stopping.'
         )
         exit(0)
 
+    ###############################################
     # Authenticate to GitHub
+    ###############################################
     if not args.token_file and not (args.user or args.password):
-        logging.error("No authentication provided, quitting....")
+        logger.error("No authentication provided, quitting....")
         exit(1)
     try:
         g = util.open_gitHub(token_file=args.token_file)
     except:
-        logging.error(
+        logger.error(
             "Something wrong happened during GitHub authentication. Check credentials."
         )
         exit(1)
 
+    if args.ignore is not None:
+        # add the ignore users to the list of ignored users
+        IGNORE_USERS.extend(args.ignore)
+
+    logger.info(
+        f"Will ignore the following users: {', '.join(IGNORE_USERS)}"
+    )
+
     # Process each repo in list_repos
     authors_stats = []
-    for r in list_repos:
-        repo_id = r["REPO_ID_SUFFIX"] # ssardina
-        repo_name = r["REPO_ID"] # workshop-6/ssardina
-        repo_url = f"https://github.com/{repo_name}"
-        logging.info(f"Processing repo {repo_id} ({repo_url})...")
+    no_repos = len(repos)
+    # repos.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())
+    for k, row in enumerate(repos, start=1):
+        repo_no = row["NO"]
+        repo_id = row["REPO_ID_SUFFIX"] # ssardina
+        repo_http_url = row["REPO_HTTP"]
+        logger.info(f"Processing repo {repo_id} ({repo_http_url})...")
+
+        logger.info(
+            f"Processing {k}/{no_repos} repo {repo_no}:{repo_id} at {repo_http_url}"
+        )
+
         try:
             no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(
-                g, r["REPO_ID"], sha=args.tag, gh_contributions=args.gh_contributions
+                g, row["REPO_ID"], sha=args.tag, gh_contributions=args.gh_contributions
             )
         except Exception as e:
-            logging.info(f"\t Exception repo {repo_id}: {e}")
+            logger.info(f"\t Exception repo {repo_id}: {e}")
             continue
-        logging.info(
+        logger.info(
             f"\t Repo {repo_id} has {no_commits} commits from {len(author_commits)} authors."
         )
         authors_stats.append((repo_id, author_commits, author_add, author_del))
@@ -267,7 +303,7 @@ if __name__ == "__main__":
     # first check if we are updating a file
     rows_to_csv = []
     if os.path.exists(args.CSV_OUT):
-        logging.info(f"Updating teams in existing CSV file *{args.CSV_OUT}*.")
+        logger.info(f"Updating teams in existing CSV file *{args.CSV_OUT}*.")
         with open(args.CSV_OUT, "r") as f:
             csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
 
@@ -276,7 +312,7 @@ if __name__ == "__main__":
                 if args.repos is not None and row["REPO_ID_SUFFIX"] not in args.repos:
                     rows_to_csv.append(row)
     else:
-        logging.info(
+        logger.info(
             f"List of author stats will be saved to CSV file *{args.CSV_OUT}*."
         )
 
