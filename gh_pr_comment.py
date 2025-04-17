@@ -299,11 +299,11 @@ if __name__ == "__main__":
                         args.dry_run,
                     )
                 else:
-                       # ok we have a good automarker report to publish now...
+                    # ok we have a good automarker report to publish now...
                     with open(os.path.join(file_report), "r") as report:
                         report_text = report.read()
 
-                    message = f"# Full autograder report \n\n ```{args.extension}\n{report_text}```"
+                    message = f"# Feedback Report ✅\n\n ```{args.extension}\n{report_text}```"
                     if error_text is not None:
                         message += f"\n**NOTE**: {error_text}"
                     message += f"\n{FEEDBACK_MESSAGE}"
