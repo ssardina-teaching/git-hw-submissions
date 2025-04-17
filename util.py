@@ -18,6 +18,7 @@ NOW_ISO = NOW.isoformat()
 
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
+LOGGING_DATE = "%Y-%m-%d %H:%M:%S"
 
 GH_HTTP_URL_PREFIX = "https://github.com"
 GH_GIT_URL_PREFIX = "git@github.com:"
