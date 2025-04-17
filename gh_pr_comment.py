@@ -18,6 +18,7 @@ import csv
 import os
 from argparse import ArgumentParser
 from pathlib import Path
+import traceback
 from typing import List
 from datetime import datetime
 from zoneinfo import ZoneInfo  # this should work Python 3.9+
@@ -157,7 +158,7 @@ if __name__ == "__main__":
     if not os.path.isfile(args.MARKING_CSV):
         logger.error(f"Marking CSV file {args.MARKING_CSV} not found.")
         exit(1)
-        
+
     if not Path(args.REPORT_FOLDER).is_dir():
         logger.error(f"Report folder {args.REPORT_FOLDER} not found or not a directory.")
         exit(1)
@@ -248,7 +249,7 @@ if __name__ == "__main__":
             logger.debug(f"\t Feedback PR found: {pr_feedback}")
 
             # get the marking data for the student/repo
-            marking_repo = marking_dict[repo_name]
+            marking_repo = marking_dict[repo_id]
 
             # print(marking_repo["Q3T"])
             # print(type(marking_repo["Q3T"]))
@@ -319,7 +320,9 @@ if __name__ == "__main__":
             logger.error(f"\t Error in repo {repo_name}: {e}")
             errors.append([repo_id, repo_url, e])
         except Exception as e:
-            logger.error(f"\t Unknown error in repo {repo_name}: {e}")
+            logger.error(
+                f"\t Unknown error in repo {repo_name}: {e} \n {traceback.format_exc()}"
+            )
             errors.append([repo_id, repo_url, e])
 
     logger.info(f"Finished! Total repos: {no_repos} - Errors: {len(errors)}.")
