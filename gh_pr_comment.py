@@ -123,7 +123,7 @@ if __name__ == "__main__":
         "-s",
         type=int,
         default=1,
-        help="repo no to start processing from (Default: %(defaults)s).",
+        help="repo no to start processing from (Default: %(default)s).",
     )
     parser.add_argument("--end", "-e", type=int, help="repo no to end processing.")
     parser.add_argument(
