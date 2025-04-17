@@ -21,7 +21,8 @@ Feel free to use them as desired. No guarantees and I am sure they will have bug
     - [`gh_pr_merge.py`: bulk merge of PRs](#gh_pr_mergepy-bulk-merge-of-prs)
     - [`gh_pr_feedback_create.py`: create Feedback PRs](#gh_pr_feedback_createpy-create-feedback-prs)
     - [`gh_pr_check_merged_forced.py`: check for merged PR and forced pushes](#gh_pr_check_merged_forcedpy-check-for-merged-pr-and-forced-pushes)
-    - [`gh_pr_feedback_comment.py`: push comments to repo's PRs](#gh_pr_feedback_commentpy-push-comments-to-repos-prs)
+    - [`gh_pr_post_result.py`: push comments to repo's PRs](#gh_pr_post_resultpy-push-comments-to-repos-prs)
+    - [`gh_pr_post_comment.py`: push a message to PRs](#gh_pr_post_commentpy-push-a-message-to-prs)
     - [`gh_workflow.py`: run automarking workflow](#gh_workflowpy-run-automarking-workflow)
     - [`gh_commit_after.py`: get commits after a date](#gh_commit_afterpy-get-commits-after-a-date)
     - [`ghc_build_reporter.py`: build YAML classroom reporter](#ghc_build_reporterpy-build-yaml-classroom-reporter)
@@ -163,7 +164,7 @@ $ python ../git-hw-submissions.git/gh_pr_check_merged_forced.py  -t ~/.ssh/keys/
 
 It will leave two CSV files `pr_merged.csv` and `pr_forced.csv` with the corresponding repos' ids.
 
-### `gh_pr_feedback_comment.py`: push comments to repo's PRs
+### `gh_pr_post_result.py`: push comments to repo's PRs
 
 This tool will push feedback comments to PRs in GH repositories. This may be useful to provide feedback and results to students after automarking. It requires:
 
@@ -177,14 +178,22 @@ This tool will push feedback comments to PRs in GH repositories. This may be use
 Now push all feedback to their pull requests from fist row (1) to row 5:
 
 ```shell
-$ python ./gh_pr_feedback_comment.py repos.csv marking.csv reports config_report_p2.py -t ~/.ssh/keys/gh-token-ssardina.txt  -s 1 -e 5 |& tee -a pr_feedback_0-10.log
+$ python ./gh_pr_post_result.py repos.csv marking.csv reports config_report_p2.py -t ~/.ssh/keys/gh-token-ssardina.txt  -s 1 -e 5 |& tee -a pr_feedback_0-10.log
 ```
 
 Use `--repos ssardina juan` to restrict to the three repos, and `--ghu` to define the column name containing the repo owner, and `--dry-run` to send feedback to console instead of repos:
 
 ```shell
-$ python  ./gh_pr_feedback_comment.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID_SUFFIX --dry-run
+$ python  ./gh_pr_post_result.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID_SUFFIX --dry-run
 ```
+
+### `gh_pr_post_comment.py`: push a message to PRs
+
+```shell
+$ python ../tools/git-hw-submissions.git/gh_pr_post_comment.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv message_pr.py --start 6
+```
+
+File `message_pr.py` defines constant `MESSAGE` with placement `ghu` fr GH username, and function `get_repo()` which is a list of the relevant repo to posts (`None` if all).
 
 ### `gh_workflow.py`: run automarking workflow
 

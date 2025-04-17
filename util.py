@@ -33,13 +33,14 @@ REPOS_HEADER_CSV = [
 ]
 
 
-def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
+def get_repos_from_csv(csv_file, repos_ids=None, ignore_ids=None) -> list[dict]:
     """
     Collect list of teams with their git URL links from a CSV file.
     Case insensitive search for the repo ids.
 
     :param csv_file: file where csv data is with two fields TEAM and GIT
-    :param repos_ids: list of specific repo names or None
+    :param repos_ids: list of specific repo names to consider or None
+    :param repos_ids: list of specific repo names to ignore or None
     :return: a list of dictionaries for each repo (name, url, etc)
             e.g., {'ORG_NAME': 'RMIT-COSC1127-1125-AI24', 'REPO_ID_PREFIX': 'p0-warmup', 'REPO_ID_SUFFIX': 'msardina', 'REPO_ID': 'RMIT-COSC1127-1125-AI24/p0-warmup-msardina', 'REPO_URL': 'git@github.com:RMIT-COSC1127-1125-AI24/p0-warmup-msardina.git'}
     """
@@ -59,6 +60,12 @@ def get_repos_from_csv(csv_file, repos_ids=None) -> list[dict]:
             t
             for t in repos
             if t["REPO_ID_SUFFIX"].lower() in list(map(str.lower, repos_ids))
+        ]
+    if ignore_ids is not None:
+        repos = [
+            t
+            for t in repos
+            if t["REPO_ID_SUFFIX"].lower() not in list(map(str.lower, repos_ids))
         ]
     return repos
 
