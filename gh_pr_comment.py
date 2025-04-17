@@ -17,6 +17,7 @@ __copyright__ = "Copyright 2024-2025"
 import csv
 import os
 from argparse import ArgumentParser
+from pathlib import Path
 from typing import List
 from datetime import datetime
 from zoneinfo import ZoneInfo  # this should work Python 3.9+
@@ -155,6 +156,10 @@ if __name__ == "__main__":
 
     if not os.path.isfile(args.MARKING_CSV):
         logger.error(f"Marking CSV file {args.MARKING_CSV} not found.")
+        exit(1)
+        
+    if not Path(args.REPORT_FOLDER).is_dir():
+        logger.error(f"Report folder {args.REPORT_FOLDER} not found or not a directory.")
         exit(1)
 
     ###############################################
