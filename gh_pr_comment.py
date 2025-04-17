@@ -299,7 +299,7 @@ if __name__ == "__main__":
                         args.dry_run,
                     )
                 else:
-                    # ok we have a good automarker report to publish now...
+                       # ok we have a good automarker report to publish now...
                     with open(os.path.join(file_report), "r") as report:
                         report_text = report.read()
 
@@ -311,9 +311,10 @@ if __name__ == "__main__":
 
             # create a new comment with the final marking/feedback table results
             feedback_text = report_feedback(marking_repo)
-            message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
-            message = feedback_text
-            issue_feedback_comment(pr_feedback, message, args.dry_run)
+            if feedback_text is not None:
+                message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
+                message = feedback_text
+                issue_feedback_comment(pr_feedback, message, args.dry_run)
             if not args.dry_run:
                 logger.info(f"\t Feedback comment posted to {pr_feedback.html_url}.")
         except GithubException as e:
