@@ -41,9 +41,9 @@ LOGGING_LEVEL = logging.INFO
 logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
+# Application global variables
 CSV_OUTPUT = "pr_create.csv"
 CSV_HEADER = ["REPO_ID_SUFFIX", "REPO_URL", "RESULT", "DETAILS"]
-
 MESSAGE_PR = """
 :wave:! GitHub Classroom created this pull request as a place for your teacher to leave feedback on your work. It will update automatically. **Don’t close or merge this pull request**, unless you’re instructed to do so by your teacher.
  In this pull request, your teacher can leave comments and feedback on your code. Click the **Subscribe** button to be notified if that happens.
