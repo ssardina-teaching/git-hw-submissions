@@ -183,7 +183,7 @@ if __name__ == "__main__":
         )
         exit(1)
 
-    if not args.no_report and args.no_feedback:
+    if args.no_report and args.no_feedback:
         logger.error(
             f"Nothing to post as both --no-report and --no-feedback were set. Please check your options."
         )
@@ -341,7 +341,7 @@ if __name__ == "__main__":
                     issue_feedback_comment(pr_feedback, message, args.dry_run)
 
             # Second, create comment with the feedback summary
-            if args.no_feedback:
+            if not args.no_feedback:
                 feedback_text = report_feedback(marking_repo)
                 if feedback_text is not None:
                     message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
