@@ -157,6 +157,7 @@ if __name__ == "__main__":
     print(args)
     logger.info(f"Starting on {TIMEZONE}: {NOW_ISO}")
 
+    # if there is no report folder, then no report posting!
     if args.REPORT_FOLDER is None:
         args.no_report = True
 
@@ -185,7 +186,7 @@ if __name__ == "__main__":
     # https://medium.com/@Doug-Creates/dynamically-import-a-module-by-full-path-in-python-bbdf4815153e
     ###############################################
     spec = importlib.util.spec_from_file_location(
-        "module_name", args.CONFIG, args.ignore
+        "module_name", args.CONFIG
     )
     module_feedback = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module_feedback)
