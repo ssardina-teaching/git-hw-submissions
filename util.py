@@ -171,3 +171,23 @@ def print_repo_info(repo : Repository):
         )
     except:
         pass
+
+def add_csv(csv_file: str, header: list, rows: list, append=True, quoting=csv.QUOTE_MINIMAL, timestamp=None):
+    # build the dictionary for each row
+    dict_rows = [dict(zip(header, row)) for row in rows]
+    mode = "a" if append else "w"
+    
+    if timestamp is not None:
+        # add timestamp to each row
+        header = header + ["TIMESTAMP"]
+        for row in dict_rows:
+            row["TIMESTAMP"] = timestamp
+    
+    with open(csv_file, mode) as f:
+        writer = csv.DictWriter(f, fieldnames=header, quoting=quoting)
+
+        # write header if file is empty
+        if f.tell() == 0:
+            writer.writeheader()
+
+        writer.writerows(dict_rows)

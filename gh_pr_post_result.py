@@ -15,7 +15,6 @@ $ python gh_pr_post_result.py -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024-2025"
-import csv
 import os
 from argparse import ArgumentParser
 from pathlib import Path
@@ -37,6 +36,7 @@ from util import (
     NOW_TXT,
     LOGGING_DATE,
     LOGGING_FMT,
+    add_csv
 )
 
 # get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
@@ -54,7 +54,11 @@ coloredlogs.install(
     logger=logger, level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE
 )
 
+#####################################
+# LOCAL GLOBAL VARIABLES FOR SCRIPT
+#####################################
 CSV_ERRORS = "pr_comment_errors.csv"
+CSV_ERRORS_HEADER = ["REPO_ID_SUFFIX", "REPO_URL", "ERROR"]
 
 SLEEP_RATE = 10  # number of repos to process before sleeping
 SLEEP_TIME = 5  # sleep time in seconds between API calls
@@ -101,7 +105,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Merge PRs in multiple repos")
     parser.add_argument("REPO_CSV", help="List of repositories to post comments to.")
     parser.add_argument("MARKING_CSV", help="List of student results.")
-    parser.add_argument("CONFIG", help="Python report builder file.")
+    parser.add_argument("CONFIG", help="Python report builder configuration file.")
     parser.add_argument(
         "REPORT_FOLDER", nargs="?", help="Folder containing student report files."
     )
@@ -161,6 +165,10 @@ if __name__ == "__main__":
     if args.REPORT_FOLDER is None:
         args.no_report = True
 
+    if not os.path.isfile(args.CONFIG):
+        logger.error(f"Feedback builder configuration file {args.CONFIG} not found or not a file.")
+        exit(1)
+
     if not os.path.isfile(args.REPO_CSV):
         logger.error(f"Repo CSV file {args.REPO_CSV} not found.")
         exit(1)
@@ -174,7 +182,7 @@ if __name__ == "__main__":
             f"Report folder {args.REPORT_FOLDER} not found or not a directory."
         )
         exit(1)
-        
+
     if not args.no_report and args.no_feedback:
         logger.error(
             f"Nothing to post as both --no-report and --no-feedback were set. Please check your options."
@@ -268,24 +276,25 @@ if __name__ == "__main__":
             logger.debug(f"\t Feedback PR found: {pr_feedback}")
 
             # get the marking data for the student/repo
+            if repo_id not in marking_dict:
+                logger.error(
+                    f"\t Repo {repo_id} not found in marking dictionary! Skipping..."
+                )
+                errors.append([repo_id, repo_url, "missing_marking"])
+                continue
             marking_repo = marking_dict[repo_id]
 
-            # print(marking_repo["Q3T"])
-            # print(type(marking_repo["Q3T"]))
-            # exit(0)
-
-            # First, check the submission row: should we skip it for any reason?
-            #   no certification, no submission, no marking, audit, etc..
+            # First, should we skip submission it for any reason?
+            # (e.g., no certification/submission/marking, audit)
             message, skip = check_submission(repo_id, marking_repo, logger)
             if message is not None:
                 issue_feedback_comment(pr_feedback, message, args.dry_run)
             if skip:
                 continue
 
-            # Here there is a proper submission
+            # Here there is a proper submission!
             # Issue the autograder report & feedback summary
-            
-            
+
             # First, create a new comment in PR with automarker report
             if not args.no_report:
                 file_report = os.path.join(
@@ -351,9 +360,12 @@ if __name__ == "__main__":
 
     logger.info(f"Finished! Total repos: {no_repos} - Errors: {len(errors)}.")
 
-    with open(CSV_ERRORS, "a", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["REPO_ID_SUFFIX", "REPO_URL", "ERROR"])
-        writer.writerows(errors)
+    add_csv(
+        CSV_ERRORS,
+        CSV_ERRORS_HEADER,
+        errors,
+        append=True,
+        timestamp=NOW_TXT,
+    )  # write the errors to a CSV file
 
     logger.info(f"Repos with errors written to {CSV_ERRORS}.")
