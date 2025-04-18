@@ -35,38 +35,32 @@ Google Google Workspace API: https://developers.google.com/drive/api/quickstart/
 
     $ pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
 __copyright__ = "Copyright 2024"
 
 from argparse import ArgumentParser
 from datetime import datetime
-from zoneinfo import ZoneInfo  # this should work Python 3.9+
+from gsheets import Sheets
+
+from util import (
+    TIMEZONE,
+    UTC,
+    NOW,
+    NOW_ISO,
+    NOW_TXT,
+    LOGGING_DATE,
+    LOGGING_FMT,
+)
+
 
 import logging
 import coloredlogs
 
-from gsheets import Sheets
-
-
-# get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
-TIMEZONE_STR = "Australia/Melbourne"
-try:
-    TIMEZONE = ZoneInfo(TIMEZONE_STR)
-except:
-    # otherwise fall back to pytz
-    import pytz
-
-    TIMEZONE = pytz.timezone(TIMEZONE_STR)
-
-
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
-LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
 LOGGING_LEVEL = logging.INFO
-logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+# LOGGING_LEVEL = logger.DEBUG
+# logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
+logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
-
-DATE_FORMAT = "%-d/%-m/%Y %-H:%-M:%-S"  # RMIT Uni (Australia)
 
 
 if __name__ == "__main__":
@@ -92,10 +86,7 @@ if __name__ == "__main__":
         help="Flag to enable webserver functionality for Google authentication (otherwise console-based).",
     )
     args = parser.parse_args()
-
-    now = datetime.now(TIMEZONE).isoformat()
-    logging.info(f"Starting on {TIMEZONE}: {now}\n")
-    logging.info(args)
+    logger.info(f"Starting on {TIMEZONE}: {NOW_ISO} - {args}")
 
     spreadsheet_id = args.SPREADSHEET
     sheet_name = args.SHEET
@@ -111,4 +102,4 @@ if __name__ == "__main__":
 
     sheet.to_csv(csv_file, encoding="utf-8", dialect="excel")
 
-    logging.info(f"Finished...")
+    logger.info(f"Finished...")
