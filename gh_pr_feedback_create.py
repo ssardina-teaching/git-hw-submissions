@@ -29,8 +29,8 @@ from util import (
     LOGGING_DATE,
     LOGGING_FMT,
     GH_HTTP_URL_PREFIX,
+    add_csv,
 )
-
 
 import logging
 import coloredlogs
@@ -39,6 +39,10 @@ LOGGING_LEVEL = logging.INFO
 # logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
 logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
+
+#####################################
+# LOCAL GLOBAL VARIABLES FOR SCRIPT
+#####################################
 
 # Application global variables
 CSV_OUTPUT = "pr_create.csv"
@@ -228,7 +232,7 @@ if __name__ == "__main__":
                         message="Setting up GitHub Classroom Feedback",
                         content=keep_content,
                     )
-                    
+
                 logger.info(f"\t Dummy file {keep_file} was updated/created.")
             # time to create the PR
             try:
@@ -260,15 +264,18 @@ if __name__ == "__main__":
     logger.info(
         f"Finished! Total repos: {no_repos} - Merged PR: {no_merged} - Missing PR: {len(output_csv)} - Errors: {no_errors}."
     )
-    output_csv = sorted(output_csv, key=lambda x: x[2])
-    if args.csv and len(output_csv) > 0:
-        # Write error CSV file
-        with open(CSV_OUTPUT, "w", newline="") as file:
-            writer = csv.writer(file,quoting=csv.QUOTE_NONNUMERIC)
-            writer.writerow(CSV_HEADER)
-            writer.writerows(output_csv)
 
-        logger.info(f"Output written to CSF file: {CSV_OUTPUT}.")
+    output_csv = sorted(output_csv, key=lambda x: x[2])
+    add_csv(
+        CSV_OUTPUT,
+        CSV_HEADER,
+        output_csv,
+        append=True,
+        timestamp=NOW_TXT,
+        quoting=csv.QUOTE_NONNUMERIC,
+    )
+
+    logger.info(f"Output written to CSF file: {CSV_OUTPUT}.")
 
     # just for manual debug.. ouch!
     # for r in output_csv:
