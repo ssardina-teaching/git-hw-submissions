@@ -34,7 +34,6 @@ from util import (
 
 import logging
 import coloredlogs
-
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
 # logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)

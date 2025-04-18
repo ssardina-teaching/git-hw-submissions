@@ -142,6 +142,12 @@ if __name__ == "__main__":
         help="Do not push the automarking report; just feedback result %(default)s.",
     )
     parser.add_argument(
+        "--no-feedback",
+        action="store_true",
+        default=False,
+        help="Do not push the feedback summary; just the report %(default)s.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
@@ -165,6 +171,12 @@ if __name__ == "__main__":
     if not Path(args.REPORT_FOLDER).is_dir():
         logger.error(
             f"Report folder {args.REPORT_FOLDER} not found or not a directory."
+        )
+        exit(1)
+        
+    if not args.no_report and args.no_feedback:
+        logger.error(
+            f"Nothing to post as both --no-report and --no-feedback were set. Please check your options."
         )
         exit(1)
 
@@ -269,8 +281,11 @@ if __name__ == "__main__":
             if skip:
                 continue
 
-            # Now there is a proper submission; issue the autograder report & feedback summary
-            # create a new comment with the automarker report
+            # Here there is a proper submission
+            # Issue the autograder report & feedback summary
+            
+            
+            # First, create a new comment in PR with automarker report
             if not args.no_report:
                 file_report = os.path.join(
                     args.REPORT_FOLDER, f"{repo_id}.{args.extension}"
@@ -315,14 +330,15 @@ if __name__ == "__main__":
                     message += f"\n{FEEDBACK_MESSAGE}"
                     issue_feedback_comment(pr_feedback, message, args.dry_run)
 
-            # create a new comment with the final marking/feedback table results
-            feedback_text = report_feedback(marking_repo)
-            if feedback_text is not None:
-                message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
-                message = feedback_text
-                issue_feedback_comment(pr_feedback, message, args.dry_run)
-            if not args.dry_run:
-                logger.info(f"\t Feedback comment posted to {pr_feedback.html_url}.")
+            # Second, create comment with the feedback summary
+            if args.no_feedback:
+                feedback_text = report_feedback(marking_repo)
+                if feedback_text is not None:
+                    message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
+                    message = feedback_text
+                    issue_feedback_comment(pr_feedback, message, args.dry_run)
+                if not args.dry_run:
+                    logger.info(f"\t Feedback comment posted to {pr_feedback.html_url}.")
         except GithubException as e:
             logger.error(f"\t Error in repo {repo_name}: {e}")
             errors.append([repo_id, repo_url, e])
