@@ -347,7 +347,8 @@ if __name__ == "__main__":
                     message = f"Dear @{repo_id}: find here the FEEDBACK & RESULTS for the project. \n\n {feedback_text}"
                     message = feedback_text
                     issue_feedback_comment(pr_feedback, message, args.dry_run)
-                    logger.info(f"\t Feedback comment posted to {pr_feedback.html_url}.")
+
+            logger.info(f"\t Feedback comment/report posted to {pr_feedback.html_url}.")
         except GithubException as e:
             logger.error(f"\t Error in repo {repo_name}: {e}")
             errors.append([repo_id, repo_url, e])
