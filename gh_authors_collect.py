@@ -18,6 +18,7 @@ __copyright__ = "Copyright 2019-2023"
 
 import base64
 import csv
+from datetime import datetime
 from pathlib import Path
 import re
 import traceback
@@ -55,7 +56,16 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 
-CSV_HEADER = ["REPO", "AUTHOR", "SHA", "DATE", "MESSAGE", "ADDITIONS", "DELETIONS", "URL"]
+CSV_HEADER = [
+    "REPO",
+    "AUTHOR",
+    "SHA",
+    "DATE",
+    "MESSAGE",
+    "ADDITIONS",
+    "DELETIONS",
+    "URL",
+]
 CSV_HEADER_STATS = ["REPO", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 GH_URL_PREFIX = "https://github.com/"
 IGNORE_USERS = [
@@ -101,7 +111,7 @@ def get_contributions(repo: Repository):
     return no_commits, author_total, author_add, author_del
 
 
-def get_commits(repo: Repository, sha: str = None) -> List[dict]:
+def get_commits(repo: Repository, since=None, sha: str = None) -> List[dict]:
     """
     Extracts all commits from a repo
     This will even parse commits that have no author login as it will extract base git commit email info
@@ -110,6 +120,7 @@ def get_commits(repo: Repository, sha: str = None) -> List[dict]:
         this is because using repo.get_stats_contributors() will only give us the contributions to the main branch!
 
     :param repo: handle to Repository
+    :param since: get commits only after that date will be parsed
     :param sha: if given, up to that commit; otherwise parse all branches
     :return: list of dictionaries, each representing a commit data
     """
@@ -123,7 +134,10 @@ def get_commits(repo: Repository, sha: str = None) -> List[dict]:
         for branch in repo_branches:
             name_branch = branch.name
             logger.debug("Processing branch: ", name_branch)
-            branch_commits = list(repo.get_commits(sha=name_branch))
+            if since is not None:
+                branch_commits = list(repo.get_commits(sha=name_branch, since=since))
+            else:
+                branch_commits = list(repo.get_commits(sha=name_branch))
             repo_commits = repo_commits.union(
                 branch_commits
             )  # union bc there will be same shared sha commits
@@ -235,10 +249,10 @@ if __name__ == "__main__":
 
     logger.info(f"Will ignore the following users: {', '.join(IGNORE_USERS)}")
 
-    # if the output csv exists, extend it with the new commits
-    # for each repo get the latest commit done
+    # 1. If output CSV file already exists, then we will extend it with the new commits
+    #   for each repo, we get its latest commit date into dictionary latest_commits
     commits_previous_csv = []
-    latest_commit = dict()
+    latest_commits = {}
     if os.path.exists(csv_file):
         logger.info(
             f"Author file *{args.CSV_OUT}* exists. Extending it with the new commits: "
@@ -248,10 +262,19 @@ if __name__ == "__main__":
             next(csv_reader)  # skip header
             commits_previous_csv = list(csv_reader)
 
-        
+        # Convert strings to datetime if needed
+        for entry in commits_previous_csv:
+            entry["DATE"] = datetime.fromisoformat(entry["DATE"])
 
+        for commits in commits_previous_csv:
+            repo_id = commits["REPO"]
+            if (
+                repo_id not in latest_commits
+                or latest_commits[repo_id] < commits["DATE"]
+            ):
+                latest_commits[repo_id] = commits["DATE"]
 
-    # Process each repo in repos - collect in list author_stats
+    # 2. Process each repo: collect all commits from all authors since latest_commits recording
     repos_commits = dict()
     no_repos = len(repos)
     # repos.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())
@@ -262,13 +285,18 @@ if __name__ == "__main__":
         repo_http_url = row["REPO_HTTP"]
         logger.info(f"Processing repo {repo_suffix} ({repo_http_url})...")
 
+        # get since when we need to get the commits from this repo (if an)
+        since_date = latest_commits.get(repo_suffix, None)
+
         logger.info(
-            f"Processing {k}/{no_repos} repo {repo_no}:{repo_suffix} at {repo_http_url}"
+            f"Processing {k}/{no_repos} repo {repo_no}:{repo_suffix} at {repo_http_url}: get commits since {since_date}"
         )
 
         try:
             repo = g.get_repo(repo_id)
-            repos_commits[repo_suffix] = get_commits(repo, sha=args.tag)
+            repos_commits[repo_suffix] = get_commits(
+                repo, since=since_date, sha=args.tag
+            )
         except Exception as e:
             logger.info(f"\t Exception repo {repo_suffix}: {e}")
             continue
@@ -279,11 +307,12 @@ if __name__ == "__main__":
             f"\t Repo {repo_suffix} has {no_commits} commits from {len(authors)} authors: {authors}."
         )
 
-    # repos_commits has all commits of all repos.
+    # Here repos_commits dictionary has all commits of all repos.
     #   key is repo suffix id
-    #   value is a list of dictionaries with commit data
+    #   value is a list of dict with commit data
 
-    # First, we add the repo id to each commit to prepare for CSV file
+    # 3. We add the repo id to each commit to prepare for CSV file
+    #   and we also build the aggregated stats for each author in each repo
     author_stats_cvs = []
     for repo_id in repos_commits:
         # all the commits of the repo
@@ -315,12 +344,12 @@ if __name__ == "__main__":
                 }
             )
 
-    # flatten the commit data into a list of commits (each will carry its repo id now)
+    # 4. flatten the commit data into a list of commits (each will carry its repo id now)
+    #  and sort by repo id first, then author.
+    #   we will use the previous commits as a base to extend
     commits_csv = commits_previous_csv
     for x in repos_commits.values():  # list containing lists of commits
         commits_csv.extend(x)  # flatten the list of lists
-
-    # sort by repo id first, then author
     commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
 
     # OK at this point we have two lists
@@ -329,7 +358,7 @@ if __name__ == "__main__":
 
     # done
 
-    # finally, write to csv the whole pack of rows (old and updated)
+    # 5. Finally, write two csv files: commit list, and aggregated contributions
     with open(csv_file, "w") as output_csv_file:
         csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER)
         csv_writer.writeheader()
