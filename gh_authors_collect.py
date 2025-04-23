@@ -299,7 +299,6 @@ if __name__ == "__main__":
         repo_id = row["REPO_ID"]  # RMIT-COSC2978/ssardina
         repo_suffix = row["REPO_ID_SUFFIX"]  # ssardina
         repo_http_url = row["REPO_HTTP"]
-        logger.info(f"Processing repo {repo_suffix} ({repo_http_url})...")
 
         # get since when we need to get the commits from this repo (if an)
         since_date = latest_commits.get(repo_suffix, None)
