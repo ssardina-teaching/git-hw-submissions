@@ -18,6 +18,7 @@ __copyright__ = "Copyright 2019-2023"
 
 import base64
 import csv
+from pathlib import Path
 import re
 import traceback
 import os
@@ -54,8 +55,8 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 
-CSV_HEADER = ["repo", "author", "sha", "message", "additions", "deletions", "url"]
-CSV_HEADER_STATS = ["repo", "author", "commits", "additions", "deletions"]
+CSV_HEADER = ["REPO", "AUTHOR", "SHA", "MESSAGE", "ADDITIONS", "DELETIONS", "URL"]
+CSV_HEADER_STATS = ["REPO", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 GH_URL_PREFIX = "https://github.com/"
 IGNORE_USERS = [
     # "ssardina",
@@ -152,12 +153,12 @@ def get_commits(repo: Repository, sha: str = None) -> List[dict]:
 
         commits_data.append(
             {
-                "author": author,
-                "sha": sha,
-                "message": message,
-                "additions": additions,
-                "deletions": deletions,
-                "url": url,
+                "AUTHOR": author,
+                "SHA": sha,
+                "MESSAGE": message,
+                "ADDITIONS": additions,
+                "DELETIONS": deletions,
+                "URL": url,
             }
         )
 
@@ -198,6 +199,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     logger.info(f"Starting on {TIMEZONE}: {NOW_ISO} - {args}")
+
+    csv_file = Path(args.CSV_OUT)
 
     ###############################################
     # Filter repos as desired
@@ -252,7 +255,7 @@ if __name__ == "__main__":
             continue
 
         no_commits = len(repos_commits[repo_suffix])
-        authors = set([c["author"] for c in repos_commits[repo_suffix]])
+        authors = set([c["AUTHOR"] for c in repos_commits[repo_suffix]])
         logger.info(
             f"\t Repo {repo_suffix} has {no_commits} commits from {len(authors)} authors: {authors}."
         )
@@ -262,17 +265,50 @@ if __name__ == "__main__":
     #   value is a list of dictionaries with commit data
 
     # First, we add the repo id to each commit to prepare for CSV file
+    author_stats_cvs = []
     for repo_id in repos_commits:
-        for commit_data in repos_commits[repo_id]:
-            commit_data["repo"] = repo_id
+        # all the commits of the repo
+        commits_repo = repos_commits[repo_id]
 
-    # flatten the data into a list of commits (each will carry its repo id now)
+        # add the repo id to each commit
+        for commit_data in commits_repo:
+            commit_data["REPO"] = repo_id
+
+        # build aggregated stats for the repo:
+        #   repo, author, no_commits, no_additions, no_deletions
+        authors = set([c["AUTHOR"] for c in commits_repo])
+        for a in authors:
+            # get all the commits of this author in this repo
+            author_commits = [c for c in commits_repo if c["AUTHOR"] == a]
+            # get the total number of commits
+            no_commits = len(author_commits)
+            # get the total number of additions and deletions
+            no_additions = sum([c["ADDITIONS"] for c in author_commits])
+            no_deletions = sum([c["DELETIONS"] for c in author_commits])
+            # add to the list of authors stats
+            author_stats_cvs.append(
+                {
+                    "REPO": repo_id,
+                    "AUTHOR": a,
+                    "COMMITS": no_commits,
+                    "ADDITIONS": no_additions,
+                    "DELETIONS": no_deletions,
+                }
+            )
+
+    # flatten the commit data into a list of commits (each will carry its repo id now)
     commits_csv = []
     for x in repos_commits.values():  # list containing lists of commits
         commits_csv.extend(x)  # flatten the list of lists
 
     # sort by repo id first, then author
-    commits_csv.sort(key=lambda x: (x["repo"], x["author"]))
+    commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
+
+    # OK at this point we have two lists
+    #   - commits_csv: all commits of all repos
+    #   - author_stats_cvs: all authors stats of all repos
+
+    # done
 
     # Produce/Update CSV file output with all repos if requested via option --csv
     # first check if we are updating a file
@@ -291,9 +327,13 @@ if __name__ == "__main__":
     #     )
 
     # finally, write to csv the whole pack of rows (old and updated)
-    with open(args.CSV_OUT, "w") as output_csv_file:
-        csv_writer = csv.DictWriter(
-            output_csv_file, fieldnames=CSV_HEADER, quoting=csv.QUOTE_NONNUMERIC
-        )
+    with open(csv_file, "w") as output_csv_file:
+        csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER)
         csv_writer.writeheader()
         csv_writer.writerows(commits_csv)
+
+    csv_stat_file = csv_file.with_name(csv_file.stem + "_stats").with_suffix(".csv")
+    with open(csv_stat_file, "w") as output_csv_file:
+        csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER_STATS)
+        csv_writer.writeheader()
+        csv_writer.writerows(author_stats_cvs)
