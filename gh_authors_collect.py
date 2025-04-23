@@ -18,7 +18,7 @@ __copyright__ = "Copyright 2019-2023"
 
 import base64
 import csv
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
 import re
 import traceback
@@ -77,6 +77,9 @@ IGNORE_USERS = [
     "AndrewPaulChester",
     "gourdoni",
 ]
+
+SLEEP_RATE = 10  # number of repos to process before sleeping
+SLEEP_TIME = 5  # sleep time in seconds between API calls
 
 
 def get_contributions(repo: Repository):
@@ -288,6 +291,10 @@ if __name__ == "__main__":
     no_repos = len(repos)
     # repos.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())
     for k, row in enumerate(repos, start=1):
+        if k % SLEEP_RATE == 0 and k > 0:
+            logger.info(f"Sleep for {SLEEP_TIME} seconds...")
+            time.sleep(SLEEP_TIME)
+            
         repo_no = row["NO"]
         repo_id = row["REPO_ID"]  # RMIT-COSC2978/ssardina
         repo_suffix = row["REPO_ID_SUFFIX"]  # ssardina
@@ -338,7 +345,7 @@ if __name__ == "__main__":
     commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
 
     author_stats_cvs = []
-    repos = [c['REPO'] for c in commits_csv]
+    repos = set([c['REPO'] for c in commits_csv])
     for repo in repos: 
         # build aggregated stats for the repo:
         #   repo, author, no_commits, no_additions, no_deletions
