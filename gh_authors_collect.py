@@ -319,7 +319,7 @@ if __name__ == "__main__":
             f"\t Repo {repo_suffix} has {no_commits} commits from {len(authors)} authors: {authors}."
         )
 
-    # Here repos_commits dictionary has all commits of all repos.
+    # At this point, repos_commits dictionary has all commits of all repos.
     #   key is repo suffix id
     #   value is a list of dict with commit data
 
@@ -340,6 +340,9 @@ if __name__ == "__main__":
         commits_csv.extend(x)  # flatten the list of lists
     commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
 
+    # 5. Now we build the aggregated stats for each author in each repo
+    #  we build a list of dicts with the following fields:
+    #   - repo, author, no_commits, no_additions, no_deletions 
     author_stats_cvs = []
     repos = set([c['REPO'] for c in commits_csv])
     for repo in repos: 
@@ -358,7 +361,7 @@ if __name__ == "__main__":
             # add to the list of authors stats
             author_stats_cvs.append(
                 {
-                    "REPO": repo_id,
+                    "REPO": repo,
                     "AUTHOR": a,
                     "COMMITS": no_commits,
                     "ADDITIONS": no_additions,
@@ -372,7 +375,7 @@ if __name__ == "__main__":
 
     # done
 
-    # 5. Finally, write two csv files: commit list, and aggregated contributions
+    # 6. Finally, write two csv files: commit list, and aggregated contributions
     with open(csv_file, "w") as output_csv_file:
         csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER)
         csv_writer.writeheader()
