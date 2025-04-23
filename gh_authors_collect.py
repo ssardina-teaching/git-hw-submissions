@@ -12,16 +12,14 @@ Library uses REST API: https://docs.github.com/en/rest
 Some usage help on PyGithub:
     https://www.thepythoncode.com/article/using-github-api-in-python
 """
-
 __author__ = "Sebastian Sardina - ssardina - ssardina@gmail.com"
-__copyright__ = "Copyright 2019-2023"
+__copyright__ = "Copyright 2019-2025"
 
-import base64
 import csv
-from datetime import datetime, time
+from datetime import datetime
 from pathlib import Path
-import re
-import traceback
+import time
+
 import os
 
 from argparse import ArgumentParser
@@ -29,7 +27,6 @@ from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
-from more_itertools import collapse
 
 # local utilities
 import util
