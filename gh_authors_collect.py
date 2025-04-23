@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 
-CSV_HEADER = ["REPO", "AUTHOR", "SHA", "MESSAGE", "ADDITIONS", "DELETIONS", "URL"]
+CSV_HEADER = ["REPO", "AUTHOR", "SHA", "DATE", "MESSAGE", "ADDITIONS", "DELETIONS", "URL"]
 CSV_HEADER_STATS = ["REPO", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 GH_URL_PREFIX = "https://github.com/"
 IGNORE_USERS = [
@@ -147,6 +147,8 @@ def get_commits(repo: Repository, sha: str = None) -> List[dict]:
             commit_details = c
             additions = commit_details.stats.additions
             deletions = commit_details.stats.deletions
+            date = commit_details.commit.author.date
+            date = date.replace(tzinfo=UTC).astimezone(TIMEZONE)
         except Exception as e:
             logger.debug(f"Error getting commit details: {e}")
             additions = deletions = 0  # Fallback if details aren't available
@@ -155,6 +157,7 @@ def get_commits(repo: Repository, sha: str = None) -> List[dict]:
             {
                 "AUTHOR": author,
                 "SHA": sha,
+                "DATE": date,
                 "MESSAGE": message,
                 "ADDITIONS": additions,
                 "DELETIONS": deletions,
@@ -232,6 +235,22 @@ if __name__ == "__main__":
 
     logger.info(f"Will ignore the following users: {', '.join(IGNORE_USERS)}")
 
+    # if the output csv exists, extend it with the new commits
+    # for each repo get the latest commit done
+    commits_previous_csv = []
+    latest_commit = dict()
+    if os.path.exists(csv_file):
+        logger.info(
+            f"Author file *{args.CSV_OUT}* exists. Extending it with the new commits: "
+        )
+        with open(args.CSV_OUT, "r") as f:
+            csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
+            next(csv_reader)  # skip header
+            commits_previous_csv = list(csv_reader)
+
+        
+
+
     # Process each repo in repos - collect in list author_stats
     repos_commits = dict()
     no_repos = len(repos)
@@ -297,7 +316,7 @@ if __name__ == "__main__":
             )
 
     # flatten the commit data into a list of commits (each will carry its repo id now)
-    commits_csv = []
+    commits_csv = commits_previous_csv
     for x in repos_commits.values():  # list containing lists of commits
         commits_csv.extend(x)  # flatten the list of lists
 
@@ -309,22 +328,6 @@ if __name__ == "__main__":
     #   - author_stats_cvs: all authors stats of all repos
 
     # done
-
-    # Produce/Update CSV file output with all repos if requested via option --csv
-    # first check if we are updating a file
-    # if os.path.exists(args.CSV_OUT):
-    #     logger.info(f"Updating teams in existing CSV file *{args.CSV_OUT}*.")
-    #     with open(args.CSV_OUT, "r") as f:
-    #         csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
-
-    #         next(csv_reader)  # skip header
-    #         for row in csv_reader:
-    #             if args.repos is not None and row["REPO_ID_SUFFIX"] not in args.repos:
-    #                 rows_to_csv.append(row)
-    # else:
-    #     logger.info(
-    #         f"List of author stats will be saved to CSV file *{args.CSV_OUT}*."
-    #     )
 
     # finally, write to csv the whole pack of rows (old and updated)
     with open(csv_file, "w") as output_csv_file:
