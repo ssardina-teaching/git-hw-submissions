@@ -23,9 +23,11 @@ import traceback
 import os
 
 from argparse import ArgumentParser
+from typing import List
 
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException
+from more_itertools import collapse
 
 # local utilities
 import util
@@ -39,11 +41,12 @@ from util import (
     LOGGING_DATE,
     LOGGING_FMT,
     GH_HTTP_URL_PREFIX,
-    DATE_FORMAT
+    DATE_FORMAT,
 )
 
 import logging
 import coloredlogs
+
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logger.DEBUG
 # logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)
@@ -51,10 +54,11 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level=LOGGING_LEVEL, fmt=LOGGING_FMT, datefmt=LOGGING_DATE)
 
 
-CSV_HEADER = ["REPO_ID_SUFFIX", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
+CSV_HEADER = ["repo", "author", "sha", "message", "additions", "deletions", "url"]
+CSV_HEADER_STATS = ["repo", "author", "commits", "additions", "deletions"]
 GH_URL_PREFIX = "https://github.com/"
 IGNORE_USERS = [
-    "ssardina",
+    # "ssardina",
     "web-flow",
     "github-classroom[bot]",
     "axelahmer",
@@ -63,147 +67,101 @@ IGNORE_USERS = [
 ]
 
 
-def print_repo_info(repo):
-    # repository full name
-    print("Full name:", repo.full_name)
-    # repository description
-    print("Description:", repo.description)
-    # the date of when the repo was created
-    print("Date created:", repo.created_at)
-    # the date of the last git push
-    print("Date of last push:", repo.pushed_at)
-    # home website (if available)
-    print("Home Page:", repo.homepage)
-    # programming language
-    print("Language:", repo.language)
-    # number of forks
-    print("Number of forks:", repo.forks)
-    # number of stars
-    print("Number of stars:", repo.stargazers_count)
-    print("-" * 50)
-    # repository content (files & directories)
-    print("Contents:")
-    for content in repo.get_contents(""):
-        print(content)
-    try:
-        # repo license
-        print(
-            "License:", base64.b64decode(repo.get_license().content.encode()).decode()
-        )
-    except:
-        pass
+def get_contributions(repo: Repository):
+    """Use GH contribution API to get the contributions of each author
+    Also return total number of contributions in repo
 
+    Args:
+        repo (Repository): handle to GitHub repository
 
-def traverse_commit(c):
-    set_c = set([c.sha])
-    for c2 in c.parents:
-        # print(c2.sha)
-        set_2 = traverse_commit(c2)
-        set_c = set_c.union(set_2)
-    return set_c
-
-
-def get_stats_contrib_repo(g: Github, repo_name, sha=None, gh_contributions=False):
+    Returns:
+        number of commits in repo
+        dict author -> number of commits
+        dict author -> number of additions
+        dict author -> number of deletions
     """
-    Extracts commit stats for a repo up to some sha/tag by inspecting each commit
+    author_total = {}
+    author_add = {}
+    author_del = {}
+
+    for contribution in repo.get_stats_contributors():
+        if contribution.author.login in IGNORE_USERS:
+            continue
+        # get the author of the contribution stat
+        author_id = contribution.author.login
+
+        author_total[author_id] = contribution.total
+        author_add[author_id] = -1
+        author_del[author_id] = -1
+
+    # get all commits in the repo
+    no_commits = sum([author_total[author_id] for author_id in author_total])
+
+    return no_commits, author_total, author_add, author_del
+
+
+def get_commits(repo: Repository, sha: str = None) -> List[dict]:
+    """
+    Extracts all commits from a repo
     This will even parse commits that have no author login as it will extract base git commit email info
 
     Note: we need to traverse each branch to get all commits of various contributors.
         this is because using repo.get_stats_contributors() will only give us the contributions to the main branch!
 
-    :param g: handle to GitHub
-    :param repo_name: name of the repository (owner + name)
+    :param repo: handle to Repository
     :param sha: if given, up to that commit; otherwise parse all branches
-    :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
+    :return: list of dictionaries, each representing a commit data
     """
-    # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html?highlight=tag#github.Repository.Repository.get_git_tag
-    repo = g.get_repo(repo_name)
+    repo_commits = set()
 
-    # https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository.get_commit
-    # first, collect ALL commits from ALL branches (if sha) for the contributors
-    contributors = [
-        x.login for x in repo.get_collaborators() if not x.login in IGNORE_USERS
-    ]
-
-    # now count each author contribution
-    author_commits = {}
-    author_additions = {}
-    author_deletions = {}
-
-    # method 1: use GH contributions to MAIN
-    if gh_contributions:
-        for contribution in repo.get_stats_contributors():
-            if contribution.author.login in IGNORE_USERS:
-                continue
-            author_id = contribution.author.login
-
-            author_commits[author_id] = contribution.total
-            author_additions[author_id] = -1
-            author_deletions[author_id] = -1
+    # first we get all the commits from all branches we care about
+    if sha is not None:  # a particular branch/sha has been given
+        repo_commits = set(repo.get_commits(sha=sha))
     else:
-        # method 2: go over each commit in every branch
-        #   this wil NOT get missconfigured usernames not correctly linked to GH accounts
-        #   also will not get commits that are not in the main branch
-        repo_commits = set()
-        if sha is not None:  # a particular branch/sha has been given
-            repo_commits = set(repo.get_commits(sha=sha))
-        else:
-            repo_branches = repo.get_branches()
-            for branch in repo_branches:
-                name_branch = branch.name
-                logger.debug("Processing branch: ", name_branch)
-                branch_commits = list(repo.get_commits(sha=name_branch))
-                repo_commits = repo_commits.union(
-                    branch_commits
-                )  # union bc there will be same shared sha commits
+        repo_branches = repo.get_branches()
+        for branch in repo_branches:
+            name_branch = branch.name
+            logger.debug("Processing branch: ", name_branch)
+            branch_commits = list(repo.get_commits(sha=name_branch))
+            repo_commits = repo_commits.union(
+                branch_commits
+            )  # union bc there will be same shared sha commits
 
-        # c is <class 'github.Commit.Commit'> https://pygithub.readthedocs.io/en/latest/github_objects/Commit.html
-        for c in repo_commits:
-            try:
-                # c.author is a github.NamedUser.NamedUser - https://pygithub.readthedocs.io/en/latest/github_objects/NamedUser.html#github.NamedUser.NamedUser
-                author_id = c.author.login
-            except Exception as e:
-                # Commits is not attached to a GitHub account, just get whatever text name was used
-                author_id = f"name({c.commit.author.name})"
+    # Now we have all commits in repo_commits, extract relevant data
+    # we will collect all the commits in the repo here
+    commits_data: List[dict] = []
 
-            if author_id in IGNORE_USERS:
-                continue
+    # c is <class 'github.Commit.Commit'> https://pygithub.readthedocs.io/en/latest/github_objects/Commit.html
+    for c in repo_commits:
+        author = c.author.login if c.author else f"name({c.commit.author.name})"
 
-            author_commits[author_id] = author_commits.get(author_id, 0) + 1
-            author_additions[author_id] = (
-                author_additions.get(author_id, 0) + c.stats.additions
-            )
-            author_deletions[author_id] = (
-                author_deletions.get(author_id, 0) + c.stats.deletions
-            )
+        if author in IGNORE_USERS:
+            continue
 
-    no_commits = sum([author_commits[author_id] for author_id in author_commits])
+        sha = c.sha
+        message = c.commit.message.strip().replace("\n", " ")
+        url = c.html_url
+        try:
+            # commit_details = repo.get_commit(sha)
+            commit_details = c
+            additions = commit_details.stats.additions
+            deletions = commit_details.stats.deletions
+        except Exception as e:
+            logger.debug(f"Error getting commit details: {e}")
+            additions = deletions = 0  # Fallback if details aren't available
 
-    return no_commits, author_commits, author_additions, author_deletions
+        commits_data.append(
+            {
+                "author": author,
+                "sha": sha,
+                "message": message,
+                "additions": additions,
+                "deletions": deletions,
+                "url": url,
+            }
+        )
 
-
-def get_stats_contrib_repo_all(g: Github, repo_name):
-    """
-    Extracts commit stats for a whole repo (not commit per commit)
-    This will ignore commits done by non registered authors
-
-    :param g: handle to GitHub
-    :param repo_name: name of the repository (owner + name)
-    :return: stats: no of total commits and dicts per author: no of commits, no of additions, no of deletions
-    """
-    repo = g.get_repo(repo_name)
-
-    no_commits = 0
-    author_commits = {}
-    author_additions = {}
-    author_deletions = {}
-    for contrib in repo.get_stats_contributors():
-        no_commits += contrib.total
-        author_id = contrib.author.login
-        author_commits[author_id] = contrib.total
-        author_additions[author_id] = sum([w.a for w in contrib.weeks])
-        author_deletions[author_id] = sum([w.d for w in contrib.weeks])
-    return no_commits, author_commits, author_additions, author_deletions
+    return commits_data
 
 
 if __name__ == "__main__":
@@ -269,69 +227,73 @@ if __name__ == "__main__":
         # add the ignore users to the list of ignored users
         IGNORE_USERS.extend(args.ignore)
 
-    logger.info(
-        f"Will ignore the following users: {', '.join(IGNORE_USERS)}"
-    )
+    logger.info(f"Will ignore the following users: {', '.join(IGNORE_USERS)}")
 
-    # Process each repo in list_repos
-    authors_stats = []
+    # Process each repo in repos - collect in list author_stats
+    repos_commits = dict()
     no_repos = len(repos)
     # repos.sort(key=lambda tup: tup["REPO_ID_SUFFIX"].lower())
     for k, row in enumerate(repos, start=1):
         repo_no = row["NO"]
-        repo_id = row["REPO_ID_SUFFIX"] # ssardina
+        repo_id = row["REPO_ID"]  # RMIT-COSC2978/ssardina
+        repo_suffix = row["REPO_ID_SUFFIX"]  # ssardina
         repo_http_url = row["REPO_HTTP"]
-        logger.info(f"Processing repo {repo_id} ({repo_http_url})...")
+        logger.info(f"Processing repo {repo_suffix} ({repo_http_url})...")
 
         logger.info(
-            f"Processing {k}/{no_repos} repo {repo_no}:{repo_id} at {repo_http_url}"
+            f"Processing {k}/{no_repos} repo {repo_no}:{repo_suffix} at {repo_http_url}"
         )
 
         try:
-            no_commits, author_commits, author_add, author_del = get_stats_contrib_repo(
-                g, row["REPO_ID"], sha=args.tag, gh_contributions=args.gh_contributions
-            )
+            repo = g.get_repo(repo_id)
+            repos_commits[repo_suffix] = get_commits(repo, sha=args.tag)
         except Exception as e:
-            logger.info(f"\t Exception repo {repo_id}: {e}")
+            logger.info(f"\t Exception repo {repo_suffix}: {e}")
             continue
+
+        no_commits = len(repos_commits[repo_suffix])
+        authors = set([c["author"] for c in repos_commits[repo_suffix]])
         logger.info(
-            f"\t Repo {repo_id} has {no_commits} commits from {len(author_commits)} authors."
+            f"\t Repo {repo_suffix} has {no_commits} commits from {len(authors)} authors: {authors}."
         )
-        authors_stats.append((repo_id, author_commits, author_add, author_del))
+
+    # repos_commits has all commits of all repos.
+    #   key is repo suffix id
+    #   value is a list of dictionaries with commit data
+
+    # First, we add the repo id to each commit to prepare for CSV file
+    for repo_id in repos_commits:
+        for commit_data in repos_commits[repo_id]:
+            commit_data["repo"] = repo_id
+
+    # flatten the data into a list of commits (each will carry its repo id now)
+    commits_csv = []
+    for x in repos_commits.values():  # list containing lists of commits
+        commits_csv.extend(x)  # flatten the list of lists
+
+    # sort by repo id first, then author
+    commits_csv.sort(key=lambda x: (x["repo"], x["author"]))
 
     # Produce/Update CSV file output with all repos if requested via option --csv
     # first check if we are updating a file
-    rows_to_csv = []
-    if os.path.exists(args.CSV_OUT):
-        logger.info(f"Updating teams in existing CSV file *{args.CSV_OUT}*.")
-        with open(args.CSV_OUT, "r") as f:
-            csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
+    # if os.path.exists(args.CSV_OUT):
+    #     logger.info(f"Updating teams in existing CSV file *{args.CSV_OUT}*.")
+    #     with open(args.CSV_OUT, "r") as f:
+    #         csv_reader = csv.DictReader(f, fieldnames=CSV_HEADER)
 
-            next(csv_reader)  # skip header
-            for row in csv_reader:
-                if args.repos is not None and row["REPO_ID_SUFFIX"] not in args.repos:
-                    rows_to_csv.append(row)
-    else:
-        logger.info(
-            f"List of author stats will be saved to CSV file *{args.CSV_OUT}*."
-        )
-
-    # next build the rows for the repo inspected for update
-    for x in authors_stats:  # x = (repo_name, dict_authors_commits)
-        for author in x[1]:
-            row = {}
-            row["REPO_ID_SUFFIX"] = x[0]
-            row["AUTHOR"] = author
-            row["COMMITS"] = x[1][author]
-            row["ADDITIONS"] = x[2][author]
-            row["DELETIONS"] = x[3][author]
-            rows_to_csv.append(row)
-
-    # sort by repo id first, then author
-    rows_to_csv.sort(key=lambda x: (x["REPO_ID_SUFFIX"], x["AUTHOR"]))
+    #         next(csv_reader)  # skip header
+    #         for row in csv_reader:
+    #             if args.repos is not None and row["REPO_ID_SUFFIX"] not in args.repos:
+    #                 rows_to_csv.append(row)
+    # else:
+    #     logger.info(
+    #         f"List of author stats will be saved to CSV file *{args.CSV_OUT}*."
+    #     )
 
     # finally, write to csv the whole pack of rows (old and updated)
     with open(args.CSV_OUT, "w") as output_csv_file:
-        csv_writer = csv.DictWriter(output_csv_file, fieldnames=CSV_HEADER)
+        csv_writer = csv.DictWriter(
+            output_csv_file, fieldnames=CSV_HEADER, quoting=csv.QUOTE_NONNUMERIC
+        )
         csv_writer.writeheader()
-        csv_writer.writerows(rows_to_csv)
+        csv_writer.writerows(commits_csv)
