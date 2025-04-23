@@ -66,13 +66,14 @@ CSV_HEADER = [
     "DELETIONS",
     "URL",
 ]
+CSV_HEADER_TYPE = {"DATE": datetime, "ADDITIONS": int, "DELETIONS": int}
 CSV_HEADER_STATS = ["REPO", "AUTHOR", "COMMITS", "ADDITIONS", "DELETIONS"]
 GH_URL_PREFIX = "https://github.com/"
 IGNORE_USERS = [
-    # "ssardina",
     "web-flow",
     "github-classroom[bot]",
     "axelahmer",
+    "ssardina",
     "AndrewPaulChester",
     "gourdoni",
 ]
@@ -111,7 +112,9 @@ def get_contributions(repo: Repository):
     return no_commits, author_total, author_add, author_del
 
 
-def get_commits(repo: Repository, since=None, sha: str = None) -> List[dict]:
+def get_commits(
+    repo: Repository, since=None, sha: str = None, length_msg=50
+) -> List[dict]:
     """
     Extracts all commits from a repo
     This will even parse commits that have no author login as it will extract base git commit email info
@@ -155,6 +158,7 @@ def get_commits(repo: Repository, since=None, sha: str = None) -> List[dict]:
 
         sha = c.sha
         message = c.commit.message.strip().replace("\n", " ")
+        message = message[:length_msg] + "..." if len(message) > length_msg else message
         url = c.html_url
         try:
             # commit_details = repo.get_commit(sha)
@@ -249,6 +253,9 @@ if __name__ == "__main__":
 
     logger.info(f"Will ignore the following users: {', '.join(IGNORE_USERS)}")
 
+    ###############################################
+    # WORK STARTS HERE
+    ###############################################
     # 1. If output CSV file already exists, then we will extend it with the new commits
     #   for each repo, we get its latest commit date into dictionary latest_commits
     commits_previous_csv = []
@@ -262,9 +269,11 @@ if __name__ == "__main__":
             next(csv_reader)  # skip header
             commits_previous_csv = list(csv_reader)
 
-        # Convert strings to datetime if needed
-        for entry in commits_previous_csv:
-            entry["DATE"] = datetime.fromisoformat(entry["DATE"])
+        # Convert data to correct type
+        for row in commits_previous_csv:
+            for key, cast in CSV_HEADER_TYPE.items():
+                if key in row:
+                    row[key] = datetime.fromisoformat(row[key]) if cast == datetime else cast(row[key])
 
         for commits in commits_previous_csv:
             repo_id = commits["REPO"]
@@ -295,7 +304,7 @@ if __name__ == "__main__":
         try:
             repo = g.get_repo(repo_id)
             repos_commits[repo_suffix] = get_commits(
-                repo, since=since_date, sha=args.tag
+                repo, since=since_date, sha=args.tag, length_msg=50
             )
         except Exception as e:
             logger.info(f"\t Exception repo {repo_suffix}: {e}")
@@ -313,7 +322,6 @@ if __name__ == "__main__":
 
     # 3. We add the repo id to each commit to prepare for CSV file
     #   and we also build the aggregated stats for each author in each repo
-    author_stats_cvs = []
     for repo_id in repos_commits:
         # all the commits of the repo
         commits_repo = repos_commits[repo_id]
@@ -322,8 +330,19 @@ if __name__ == "__main__":
         for commit_data in commits_repo:
             commit_data["REPO"] = repo_id
 
+    # 4. flatten the commit data into a list of commit dicts (each will carry its repo id now)
+    #  and sort by repo id first, then author.
+    commits_csv = commits_previous_csv
+    for x in repos_commits.values():  # list containing lists of commits
+        commits_csv.extend(x)  # flatten the list of lists
+    commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
+
+    author_stats_cvs = []
+    repos = [c['REPO'] for c in commits_csv]
+    for repo in repos: 
         # build aggregated stats for the repo:
         #   repo, author, no_commits, no_additions, no_deletions
+        commits_repo = [c for c in commits_csv if c["REPO"] == repo]
         authors = set([c["AUTHOR"] for c in commits_repo])
         for a in authors:
             # get all the commits of this author in this repo
@@ -343,14 +362,6 @@ if __name__ == "__main__":
                     "DELETIONS": no_deletions,
                 }
             )
-
-    # 4. flatten the commit data into a list of commits (each will carry its repo id now)
-    #  and sort by repo id first, then author.
-    #   we will use the previous commits as a base to extend
-    commits_csv = commits_previous_csv
-    for x in repos_commits.values():  # list containing lists of commits
-        commits_csv.extend(x)  # flatten the list of lists
-    commits_csv.sort(key=lambda x: (x["REPO"], x["AUTHOR"]))
 
     # OK at this point we have two lists
     #   - commits_csv: all commits of all repos
