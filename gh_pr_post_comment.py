@@ -1,5 +1,9 @@
 """
-Post a comment to the Feedback PR of a student repo
+Post a comment to the Feedback PR of a student repo.
+
+This script does not require a marking CSV, just a repo CSV.
+You cannot add text depending on marking info, like the commit processed or date of submission.
+Script gh_pr_post_result.py uses marking CSV and is therefore more powerful
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
@@ -147,7 +151,7 @@ if __name__ == "__main__":
         logger.error(f'No relevant repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
 
-    logger.error(f'Number of relevant repos found: {len(list_repos)}')
+    logger.info(f'Number of relevant repos found: {len(list_repos)}')
 
     ###############################################
     # Authenticate to GitHub

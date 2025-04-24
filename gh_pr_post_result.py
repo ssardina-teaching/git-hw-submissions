@@ -1,5 +1,5 @@
 """
-Issue marking comments to the Feedback PR of a student repo
+This script allows to post to repos Feedback PRs to send bulk messages or post results
 
 Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 
@@ -8,9 +8,36 @@ Uses PyGithub (https://github.com/PyGithub/PyGithub) as API to GitHub:
 PyGithub documentation: https://pygithub.readthedocs.io/en/latest/introduction.html
 Other doc on PyGithub: https://www.thepythoncode.com/article/using-github-api-in-python
 
+
+The script is able to post:
+
+1. post automarker reports (from file) with feedback text in a message
+2. post a feedback summary message after the report message
+
+By using 2 only, one can also use it to just post messages to the Feedback PR.
+(e.g., clarify which commit was processed, or date of submission)
+
+The script requires:
+
+1. a CSV file with all the repos to process
+2. a CSV file with the marking information (e.g., GHU, GH suffix, marks, feedback, etc.)
+3. a Python file with the report builder configuration
+3. [OPTIONAL] a folder with the automarker reports to be posted
+
 Example:
 
-$ python gh_pr_post_result.py -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 repos.csv marking.csv reports |& tee -a pr_feedback.log
+$ python gh_pr_post_result.py -t ~/.ssh/keys/gh-token-ssardina.txt --repos s3975993 repos.csv marking.csv pr_message.py reports |& tee -a pr_feedback.log
+
+The report builder (file pr_message.py in the example) must define the following functions:
+
+- report_feedback(mapping): function to generate the feedback message
+- check_submission(repo_id, mapping, logger): function to check if the repo should be processed
+- get_repos(): function to get the list of repos to process (if not given in the CSV file)
+- FEEDBACK_MESSAGE: message to be added at the end of the feedback report
+
+The `mapping` is a dictionary with the marking information for the repo, representing one row of the CSV file.
+
+See file "gh_pr_post_result_report_builder_example.py" for an example
 """
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
@@ -177,7 +204,7 @@ if __name__ == "__main__":
         logger.error(f"Marking CSV file {args.MARKING_CSV} not found.")
         exit(1)
 
-    if not Path(args.REPORT_FOLDER).is_dir():
+    if args.REPORT_FOLDER and not Path(args.REPORT_FOLDER).is_dir():
         logger.error(
             f"Report folder {args.REPORT_FOLDER} not found or not a directory."
         )
@@ -186,6 +213,12 @@ if __name__ == "__main__":
     if args.no_report and args.no_feedback:
         logger.error(
             f"Nothing to post as both --no-report and --no-feedback were set. Please check your options."
+        )
+        exit(1)
+
+    if (args.start != 1 or args.end) is not None and (args.repos or args.ignore):
+        logger.error(
+            f"Cannot use --start/--end and --repos/--ignore at the same time. Please check your options."
         )
         exit(1)
 
@@ -206,20 +239,36 @@ if __name__ == "__main__":
     report_feedback = getattr(module_feedback, "report_feedback")
     check_submission = getattr(module_feedback, "check_submission")
 
+    #  feedback file may say which repos to process
+    try:
+        get_repos = getattr(module_feedback, "get_repos")
+    except AttributeError:
+        get_repos = lambda: None
+
     # load the marking dictionary from the CSV file
     marking_dict = load_marking_dict(args.MARKING_CSV, col_key=args.ghu)
 
     ###############################################
-    # Filter repos as desired
+    # Filter repos as requested
     ###############################################
-    list_repos = util.get_repos_from_csv(args.REPO_CSV, args.repos)
-    if args.repos is None:
-        end_no = args.end if args.end is not None else len(list_repos)
-        list_repos = list_repos[args.start - 1 : end_no]
+    repos_process = args.repos or get_repos()
+    repos = util.get_repos_from_csv(
+        args.REPO_CSV,
+        repos_process,
+        args.ignore,
+    )
 
-    if len(list_repos) == 0:
+    # TODO: start and end clashes badly if ignore, repos, or get_repos are used
+    # only allow --start and --end if no repos or ignore are given
+    if repos_process is None:
+        end_no = args.end if args.end is not None else len(repos)
+        repos = repos[args.start - 1 : end_no]
+
+    if len(repos) == 0:
         logger.error(f'No relevant repos found in the mapping file "{args.REPO_CSV}". Stopping.')
         exit(0)
+
+    logger.info(f"Number of relevant repos found: {len(repos)}")
 
     ###############################################
     # Authenticate to GitHub
@@ -239,9 +288,9 @@ if __name__ == "__main__":
     # Process each repo in list_repos
     ###############################################
     authors_stats = []
-    no_repos = len(list_repos)
+    no_repos = len(repos)
     errors = []
-    for k, r in enumerate(list_repos, start=1):
+    for k, r in enumerate(repos, start=1):
         if k % SLEEP_RATE == 0 and k > 0:
             logger.info(f"Sleep for {SLEEP_TIME} seconds...")
             time.sleep(SLEEP_TIME)
