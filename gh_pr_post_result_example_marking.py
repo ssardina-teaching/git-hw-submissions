@@ -2,6 +2,7 @@ import logging
 
 # GH emoticons: https://gist.github.com/rxaviers/7360908
 
+# feedback message just after automarker report
 FEEDBACK_MESSAGE = r"""
 
 -------------------------
@@ -22,7 +23,6 @@ The final score (marks) for each suite is based on the total points collected af
 """
 
 TOTAL_POINTS = 100
-
 FEEDBACK_ENABLED = False
 FEEDBACK_ENABLED = True
 

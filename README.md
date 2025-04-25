@@ -166,7 +166,7 @@ It will leave two CSV files `pr_merged.csv` and `pr_forced.csv` with the corresp
 
 ### `gh_pr_post_result.py`: push comments to repo's PRs
 
-This tool will push feedback comments to PRs in GH repositories. This may be useful to provide feedback and results to students after automarking. It requires:
+This tool will push comments (e.g., homework feedback and results) to PRs in GH repositories. This may be useful to provide feedback and results to students after automarking. It requires:
 
 - A CSV file with the list of all relevant repos to process (e.g., student's projects).
 - A CSV file with the marking results (points, marks, comments, etc).
@@ -174,23 +174,27 @@ This tool will push feedback comments to PRs in GH repositories. This may be use
 - A Python file defining two functions that process a row in the marking results:
   - `check_submission`: can be used to check if the row contains a legal/successful submission. It will return whether the row/submission needs to be skipped and a string message to be posted to the PR, if any (e.g., the reason why the submission was not marked and skipped).
   - `report_feedback`: produce the actual feedback text to be posted in the PR.
+  - `FEEDBACK_MESSAGE`: message to post after a report.
+  - `get_repo()` [OPTIONAL]: returns a list of repos to process.
 
 Now push all feedback to their pull requests from fist row (1) to row 5:
 
 ```shell
-$ python ./gh_pr_post_result.py repos.csv marking.csv reports config_report_p2.py -t ~/.ssh/keys/gh-token-ssardina.txt  -s 1 -e 5 |& tee -a pr_feedback_0-10.log
+$ python ./gh_pr_post_result.py repos.csv marking.csv feedback_p2.py reports  -t ~/.ssh/keys/gh-token-ssardina.txt
 ```
 
-Use `--repos ssardina juan` to restrict to the three repos, and `--ghu` to define the column name containing the repo owner, and `--dry-run` to send feedback to console instead of repos:
+It is best to use `--dry-run` first to test it.
 
-```shell
-$ python  ./gh_pr_post_result.py repos.csv marking.csv reports -t ~/.ssh/keys/gh-token-ssardina.txt --repos ssardina juan --ghu REPO_ID_SUFFIX --dry-run
-```
+Check repor builder examples:
+
+- `gh_pr_post_result_example_marking.py`: build a full message for an assignment result.
+- `gh_pr_post_result_example_message.py`: simple message to post to some repos.
+
 
 ### `gh_pr_post_comment.py`: push a message to PRs
 
 ```shell
-$ python ../tools/git-hw-submissions.git/gh_pr_post_comment.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv message_pr.py --start 6
+$ python ../tools/git-hw-submissions.git/gh_pr_post_comment.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv message_pr.py
 ```
 
 File `message_pr.py` defines constant `MESSAGE` with placement `ghu` fr GH username, and function `get_repo()` which is a list of the relevant repo to posts (`None` if all).

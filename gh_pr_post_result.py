@@ -32,12 +32,16 @@ The report builder (file pr_message.py in the example) must define the following
 
 - report_feedback(mapping): function to generate the feedback message
 - check_submission(repo_id, mapping, logger): function to check if the repo should be processed
-- get_repos(): function to get the list of repos to process (if not given in the CSV file)
 - FEEDBACK_MESSAGE: message to be added at the end of the feedback report
+- get_repos() [OPTIONAL]: function to get the list of repos to process
 
 The `mapping` is a dictionary with the marking information for the repo, representing one row of the CSV file.
 
-See file "gh_pr_post_result_report_builder_example.py" for an example
+See files
+    gh_pr_post_result_example_marking.py
+    gh_pr_post_result_example_message.py
+
+for examples on message builders
 """
 
 __author__ = "Sebastian Sardina & Andrew Chester - ssardina - ssardina@gmail.com"
