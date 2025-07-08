@@ -14,7 +14,7 @@ TIMEZONE = ZoneInfo(TIMEZONE_STR)
 UTC = ZoneInfo("UTC")
 NOW = datetime.now(TIMEZONE).replace(microsecond=0)
 NOW_TXT = NOW.strftime("%Y-%m-%d_%H-%M")
-NOW_ISO = NOW.isoformat()   
+NOW_ISO = NOW.isoformat()
 
 LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_DATE = "%a, %d %b %Y %H:%M:%S"
@@ -176,13 +176,13 @@ def add_csv(csv_file: str, header: list, rows: list, append=True, quoting=csv.QU
     # build the dictionary for each row
     dict_rows = [dict(zip(header, row)) for row in rows]
     mode = "a" if append else "w"
-    
+
     if timestamp is not None:
         # add timestamp to each row
         header = header + ["TIMESTAMP"]
         for row in dict_rows:
             row["TIMESTAMP"] = timestamp
-    
+
     with open(csv_file, mode) as f:
         writer = csv.DictWriter(f, fieldnames=header, quoting=quoting)
 

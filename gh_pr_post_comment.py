@@ -38,6 +38,7 @@ import util
 from util import (
     NOW_ISO,
     TIMEZONE,
+    TIMEZONE_STR,
     UTC,
     NOW,
     NOW_TXT,
@@ -45,13 +46,8 @@ from util import (
     LOGGING_FMT,
 )
 
-# get the TIMEZONE to be used - works with Python < 3.9 via pytz and 3.9 via ZoneInfo
-TIMEZONE_STR = "Australia/Melbourne"
-TIMEZONE = ZoneInfo(TIMEZONE_STR)
-
 import logging
 import coloredlogs
-
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
 # logging.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)

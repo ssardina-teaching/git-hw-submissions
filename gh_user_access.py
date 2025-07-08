@@ -43,7 +43,6 @@ from datetime import datetime
 
 import logging
 import coloredlogs
-LOGGING_FMT = "%(asctime)s %(levelname)-8s %(message)s"
 LOGGING_LEVEL = logging.INFO
 # LOGGING_LEVEL = logging.DEBUG
 # logger.basicConfig(format=LOGGING_FMT, level=LOGGING_LEVEL, datefmt=LOGGING_DATE)

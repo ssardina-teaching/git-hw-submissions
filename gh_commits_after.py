@@ -39,7 +39,6 @@ from util import (
 # https://pygithub.readthedocs.io/en/latest/introduction.html
 from github import Github, Repository, Organization, GithubException, Workflow
 
-# get the TIMEZONE to be used - ZoneInfo requires Python 3.9+
 from datetime import datetime
 
 
