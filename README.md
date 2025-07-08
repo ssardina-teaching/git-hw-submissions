@@ -41,10 +41,10 @@ Feel free to use them as desired. No guarantees and I am sure they will have bug
 
 ## Setup
 
-To install all requirements:
+To install all requirements run this in your Python virtual environment:
 
 ```bash
-sudo pip install -r requirements.txt
+$ pip install -r requirements.txt
 ```
 
 The libraries used are:
@@ -441,3 +441,5 @@ rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project
 ## Contributors
 
 - Prof. Sebastian Sardina (<ssardina@gmail.com>)
+- Andrew Chester (head tutor in AI - 2020-2024)
+- Jonathon Belotti (helped in AI-2018)
