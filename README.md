@@ -27,6 +27,7 @@ Feel free to use them as desired. No guarantees and I am sure they will have bug
     - [`gh_commit_after.py`: get commits after a date](#gh_commit_afterpy-get-commits-after-a-date)
     - [`ghc_build_reporter.py`: build YAML classroom reporter](#ghc_build_reporterpy-build-yaml-classroom-reporter)
     - [`gh_user_access.py`: get repos and accesses of org](#gh_user_accesspy-get-repos-and-accesses-of-org)
+    - [`gh_issue_labels.py`: get/update issue labels in a GH repo](#gh_issue_labelspy-getupdate-issue-labels-in-a-gh-repo)
   - [Git Tools](#git-tools)
     - [`git_clone_submissions.py`: batch git cloning](#git_clone_submissionspy-batch-git-cloning)
     - [`git_batch_commit.sh`: bulk commit and push to repos](#git_batch_commitsh-bulk-commit-and-push-to-repos)
@@ -43,15 +44,15 @@ Feel free to use them as desired. No guarantees and I am sure they will have bug
 To install all requirements:
 
 ```bash
-$ sudo pip install -r requirements.txt
+sudo pip install -r requirements.txt
 ```
 
 The libraries used are:
 
-- GitHub REST documentation: https://docs.github.com/en/rest
-- PyGithub: https://github.com/PyGithub/PyGithub
-- gitpython: http://www.legendu.net/misc/blog/hands-on-GitPython/
-- gh API CLI tool: https://github.com/cli/cli ([manual](https://cli.github.com/manual/))
+- GitHub REST documentation: <https://docs.github.com/en/rest>
+- PyGithub: <https://github.com/PyGithub/PyGithub>
+- gitpython: <http://www.legendu.net/misc/blog/hands-on-GitPython/>
+- gh API CLI tool: <https://github.com/cli/cli> ([manual](https://cli.github.com/manual/))
 
 ## GitHub Scripts
 
@@ -78,7 +79,7 @@ Produces a CSV file with all the repos in a given GitHub Classroom for a particu
 For example, to get all the repos submitted for AI24 project with prefix `p3-prolog` into a CSV file `repos.csv`:
 
 ```shell
-$  python ./gh_classroom_collect.py -t ~/.ssh/keys/gh-token-ssardina.txt RMIT-COSC1127-1125-AI24  p3-prolog repos.csv |& tee -a repos.log
+python ./gh_classroom_collect.py -t ~/.ssh/keys/gh-token-ssardina.txt RMIT-COSC1127-1125-AI24  p3-prolog repos.csv |& tee -a repos.log
 ```
 
 > [!NOTE]
@@ -89,7 +90,7 @@ $  python ./gh_classroom_collect.py -t ~/.ssh/keys/gh-token-ssardina.txt RMIT-CO
 Produce a CSV file with how many commits each author has done per repo. For example:
 
 ```shell
-$ python ./gh_authors_collect.py -t ~/.ssh/keys/github-token-ssardina.txt 
+$ python ./gh_authors_collect.py -t ~/.ssh/keys/github-token-ssardina.txt
     --tag submission -- repos.csv authors.csv
 ```
 
@@ -100,7 +101,7 @@ The `--tag` option restricts to tags finishing in a given tag. If no tag is give
 This script will push a template Wiki to each repo:
 
 ```bash
-$ python ./gh_create_wiki.py repos.csv ./wiki-template
+python ./gh_create_wiki.py repos.csv ./wiki-template
 ```
 
 See [wiki-template](wiki-template/) for an example of a Wiki template.
@@ -139,7 +140,7 @@ This script can be used to merge PRs in a set of repos. This is useful when a PR
 For example, to merge PR with title `Sync` from the 40th repo in `repo.csv`:
 
 ```shell
-$ python ./gh_pr_merge.py repos.csv -t ~/.ssh/keys/gh-token-ssardina.txt --title Sync --start 40 |& tee -a merge_pr.log
+python ./gh_pr_merge.py repos.csv -t ~/.ssh/keys/gh-token-ssardina.txt --title Sync --start 40 |& tee -a merge_pr.log
 ```
 
 ### `gh_pr_feedback_create.py`: create Feedback PRs
@@ -149,17 +150,17 @@ Check which repos are missing an expected Feedback PR #1 from GitHub Classroom; 
 For example:
 
 ```shell
-$ python ./gh_pr_create.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv a7b3d7aee55d00d55ee29b8a505d17fc8283e9f8 |& tee pr_create.log
+python ./gh_pr_create.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv a7b3d7aee55d00d55ee29b8a505d17fc8283e9f8 |& tee pr_create.log
 ```
 
 Notice that the script needs the list of repos to consider ()`repos.csv`) and the base sha to create the Feedback branch and corresponding PR. Because the repos were created by GH Classroom, the first commit should have the same sha than the original staff template.
 
 ### `gh_pr_check_merged_forced.py`: check for merged PR and forced pushes
 
-This script will check for PRs that have been merged and 
+This script will check for PRs that have been merged and
 
 ```shell
-$ python ../git-hw-submissions.git/gh_pr_check_merged_forced.py  -t ~/.ssh/keys/gh-token-ssardina.txt   repos.csv
+python ../git-hw-submissions.git/gh_pr_check_merged_forced.py  -t ~/.ssh/keys/gh-token-ssardina.txt   repos.csv
 ```
 
 It will leave two CSV files `pr_merged.csv` and `pr_forced.csv` with the corresponding repos' ids.
@@ -180,7 +181,7 @@ This tool will push comments (e.g., homework feedback and results) to PRs in GH 
 Now push all feedback to their pull requests from fist row (1) to row 5:
 
 ```shell
-$ python ./gh_pr_post_result.py repos.csv marking.csv feedback_p2.py reports  -t ~/.ssh/keys/gh-token-ssardina.txt
+python ./gh_pr_post_result.py repos.csv marking.csv feedback_p2.py reports  -t ~/.ssh/keys/gh-token-ssardina.txt
 ```
 
 It is best to use `--dry-run` first to test it.
@@ -190,11 +191,10 @@ Check repor builder examples:
 - `gh_pr_post_result_example_marking.py`: build a full message for an assignment result.
 - `gh_pr_post_result_example_message.py`: simple message to post to some repos.
 
-
 ### `gh_pr_post_comment.py`: push a message to PRs
 
 ```shell
-$ python ../tools/git-hw-submissions.git/gh_pr_post_comment.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv message_pr.py
+python ../tools/git-hw-submissions.git/gh_pr_post_comment.py -t ~/.ssh/keys/gh-token-ssardina.txt repos.csv message_pr.py
 ```
 
 File `message_pr.py` defines constant `MESSAGE` with placement `ghu` fr GH username, and function `get_repo()` which is a list of the relevant repo to posts (`None` if all).
@@ -216,19 +216,18 @@ Examples:
 $ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --until 2025-04-08T12:00 --run-name "Automarking up April 8 12pm" -- start repos.csv |& tee -a autograde-2025-04-08T1200.log
 
 # get all the HTML URL to workflow job reports
-$ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --run-name "Autograding Test" -repos baoly19,anurag060197,minhphamhuy -- jobs repos.csv                    
+$ python ../../tools/git-hw-submissions.git/gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --run-name "Autograding Test" -repos baoly19,anurag060197,minhphamhuy -- jobs repos.csv
 
 # delete all worflow runs after April 8, 2025 - 12pm
 $ python gh_workflow.py -t ~/.ssh/keys/gh-token-ssardina.txt --name Autograding --until 2025-04-08T12:00 --repos ssardina -- delete repos.csv
 ```
-
 
 ### `gh_commit_after.py`: get commits after a date
 
 To get the commits after a date (and the one just before):
 
 ```shell
-$ python ../../tools/git-hw-submissions.git/gh_commits_after.py -t /home/ssardina/.ssh/keys/gh-token-ssardina.txt  --ignore ssardina --since 2025-04-08T12:00 --repos minhphamhuy ssardina DeltaEchoVictor101  -- repos.csv
+python ../../tools/git-hw-submissions.git/gh_commits_after.py -t /home/ssardina/.ssh/keys/gh-token-ssardina.txt  --ignore ssardina --since 2025-04-08T12:00 --repos minhphamhuy ssardina DeltaEchoVictor101  -- repos.csv
 ```
 
 This was used to revert back to a previous commit before a deadline when the student has (illegally) push more changes after a deadline.
@@ -275,8 +274,8 @@ Total marks:  100                                                               
         DIET-Q3_RESULTS: ${{steps.diet-q3.outputs.result}}                                                            │* 1c283a1 - adding shop for iten predicate (4 days ago) <Dev Bakshi>
   with:                                                                                                               │* b81a363 - add deadline (3 weeks ago) <github-classroom[bot]>
     runners: shop_4,shops_for_item_2,shops_for_items_2,intersection_3,diff_3,union_3,where-live,map_coloring,class_sch│* 726a5f8 - Setting up GitHub Classroom Feedback (3 weeks ago) <github-classroom[bot]>
-eduling,diet,diet-q1,diet-q2,diet-q3          
-``` 
+eduling,diet,diet-q1,diet-q2,diet-q3
+```
 
 Then one can copy and paste this in the `classroom.yaml` workflow file.
 
@@ -285,10 +284,22 @@ Then one can copy and paste this in the `classroom.yaml` workflow file.
 This script allows to get all repos in an organization and its contributors with their acceses (read/write/admin).
 
 ```shell
-$ python ../tools/git-hw-submissions.git/gh_user_access.py -t ~/.ssh/keys/gh-token-ssardina.txt list RMIT-COSC2780-2973-IDM25 ssardina -s 1 -e 10 |& tee -a 2025.04.13.repo-org.log
+python ../tools/git-hw-submissions.git/gh_user_access.py -t ~/.ssh/keys/gh-token-ssardina.txt list RMIT-COSC2780-2973-IDM25 ssardina -s 1 -e 10 |& tee -a 2025.04.13.repo-org.log
 ```
 
 This could be good to later inspect and handle users  who have dropped the course (may want to remove their access to the repos).
+
+### `gh_issue_labels.py`: get/update issue labels in a GH repo
+
+This script allows to get the current list of issue labels from a repo, as a JSON file, or push a given list of labels, including replacing the labels completely.
+
+```shell
+# get the current list of labels into labels.json
+$ python gh_issue_labels.py get harry-honours-2025/honours-software -t jasdlakjsdlj1223d --file labels.json
+
+# push completely the set of labels
+$ python gh_issue_labels.py push harry-honours-2025/honours-software -tf  ~/.ssh/keys/gh-token-ssardina.txt --file labels.json --replace
+```
 
 ## Git Tools
 
@@ -304,7 +315,6 @@ We can run interactively first at development time; for example:
 >>> ws[0].create_dispatch(ref="main")
 ```
 
-
 ### `git_clone_submissions.py`: batch git cloning
 
 This tool clones a set of student/team repositories listed in a CSV file at a given _tagged_ commit. The CVS file should contain the team name (under column name `TEAM`) and a GIT ssh link (under column name `GIT-URL`).
@@ -319,7 +329,7 @@ At the end, the script produces a CSV file with the information of each repo suc
 For example, to clone Project 0 at commit with tag "`final`" using the database of repos `repos.csv`:
 
 ```shell
-$ python ./git_clone_submissions.py --file-timestamps timestamps.csv repos.csv final submissions/ &| tee clone.log
+python ./git_clone_submissions.py --file-timestamps timestamps.csv repos.csv final submissions/ &| tee clone.log
 ```
 
 All repos will be cloned within folder `submissions/` and the file `timestamps.csv` will contain the timestamps and commits of each repo cloned successfully. The file will contain the date of the commit linked to the tag. If the tag is an annotated tag (and not just lightweight tag), it will also include the date tagged (otherwise they will be assumed the same); see [annotated vs lightweight tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
@@ -337,7 +347,7 @@ This script allows to commit and push changes to a collection of repos that alre
 Sometime we want to revert back to some previous commit, for example, if the student has done late work which has already been autograder by the workflow.
 
 ```shell
-$ python ../../tools/git-hw-submissions.git/git_revert.py submissions/deltaechovictor101/ b81a363 --keep .github
+python ../../tools/git-hw-submissions.git/git_revert.py submissions/deltaechovictor101/ b81a363 --keep .github
 ```
 
 >[!NOTE]
@@ -360,7 +370,7 @@ All access to Google API requires authentication; usually the workflow is as fol
 
 > [!TIP]
 > Read [Integrating Google Drive API with Python: A Step-by-Step Guide](https://medium.com/the-team-of-future-learning/integrating-google-drive-api-with-python-a-step-by-step-guide-7811fcd16c44).
-> 
+>
 > - [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts) access:
 >   - [gsheets](https://gsheets.readthedocs.io/en/stable/index.html)
 >   - [pygsheets](https://github.com/nithinmurali/pygsheets)
@@ -370,13 +380,14 @@ All access to Google API requires authentication; usually the workflow is as fol
 
 ### `gg_get_worksheet.py`: download Google Sheet worksheet as CSV file
 
-This script allows to download a Google Sheet from the cloud. It relies on the [gsheets](https://gsheets.readthedocs.io/en/stable/index.html) package to access the [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts). 
+This script allows to download a Google Sheet from the cloud. It relies on the [gsheets](https://gsheets.readthedocs.io/en/stable/index.html) package to access the [Google Sheet API](https://developers.google.com/sheets/api/guides/concepts).
 
 The sheet to download is often a marking sheet. For example, to get the sheet `MARKING` from Google Spreadsheet with id `1kX-fa3_DMNDQROUr1Y-cG89UksTUUqlYdrNcV1yN6NA`:
 
 ```shell
-$ python ./gg_get_worksheet.py 1kX-fa3_DMNDQROUr1Y-cG89UksTUUqlYdrNcV1yN6NA MARKING -c ~/.ssh/keys/credentials.json -o marking.csv
+python ./gg_get_worksheet.py 1kX-fa3_DMNDQROUr1Y-cG89UksTUUqlYdrNcV1yN6NA MARKING -c ~/.ssh/keys/credentials.json -o marking.csv
 ```
+
 The `credentials.json` was obtained via the [Google Sheet API setup process](https://developers.google.com/sheets/api/quickstart/python). The first time that is used, a permission will be required. A certificate file `storage.json` will be left then that will allow direct access from there on (until certificate expires).
 
 The authentication will be done via console. Use `--webserver` to open an actual browser.
@@ -388,7 +399,7 @@ This script can process Google Sheets produced by Google Forms, and download lin
 For example, to download the files recorded in column `G` in the worksheet `W4-resolution` of a Google Sheet with id `1ogCRbx...`, and save each in a folder `submission/XXXX` where `XXXX` is the student number recorded in column `C`:
 
 ```shell
-$ python ./gg_sheet_submissions.py 1ogCRbxB3seVhoqhD7iBmVZ8EdpvGEB94oLowDIs5s2g W4-resolution tea --output test/submissions --file-name test.cnf --column-id C --column-file G
+python ./gg_sheet_submissions.py 1ogCRbxB3seVhoqhD7iBmVZ8EdpvGEB94oLowDIs5s2g W4-resolution tea --output test/submissions --file-name test.cnf --column-id C --column-file G
 ```
 
 ### `gg_drive_download.py`: download files in Drive folder
@@ -396,7 +407,7 @@ $ python ./gg_sheet_submissions.py 1ogCRbxB3seVhoqhD7iBmVZ8EdpvGEB94oLowDIs5s2g 
 This tool allows downloading file submissions in a Google Drive folder, usually submitted via a Google Form by students. It uses [PyDrive2](https://docs.iterative.ai/PyDrive2/) package for more abstract access to the [Google Drive API](https://developers.google.com/drive/api/guides/about-sdk).
 
 ```shell
-$ python ./gg_drive_download.py 1mttf61NwuFNY25idwWw5AKzV3tQQbwlMp980i-9vnkK3PIV4o7ZOtykWvjM-VLqmHuYJ0jX4 -c ~/.ssh/keys/credentials.json --output test/submissions --file-name submissions.cnf
+python ./gg_drive_download.py 1mttf61NwuFNY25idwWw5AKzV3tQQbwlMp980i-9vnkK3PIV4o7ZOtykWvjM-VLqmHuYJ0jX4 -c ~/.ssh/keys/credentials.json --output test/submissions --file-name submissions.cnf
 ```
 
 This script is a new and simpler version of the one in [this repo](https://github.com/ssardina-teaching/google-assignment-submission).
@@ -429,4 +440,4 @@ rsync  -avt --ignore-existing  zip-submissions-p4/*.zip AI18-assessments/project
 
 ## Contributors
 
-- Prof. Sebastian Sardina (ssardina@gmail.com)
+- Prof. Sebastian Sardina (<ssardina@gmail.com>)

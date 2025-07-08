@@ -1,0 +1,52 @@
+[
+  {
+    "name": "benchmarking",
+    "color": "f9d0c4",
+    "description": "Contributes to benchmarks/experiments"
+  },
+  {
+    "name": "bug",
+    "color": "b60205",
+    "description": "Something isn't working"
+  },
+  {
+    "name": "critical",
+    "color": "b60205",
+    "description": "A very high priority issue that needs immediate attention"
+  },
+  {
+    "name": "development",
+    "color": "0e8a16",
+    "description": "Contributes to the development of the thesis software"
+  },
+  {
+    "name": "documentation",
+    "color": "0075ca",
+    "description": "Improvements or additions to documentation"
+  },
+  {
+    "name": "duplicate",
+    "color": "cfd3d7",
+    "description": "This issue or pull request already exists"
+  },
+  {
+    "name": "epic",
+    "color": "fbca04",
+    "description": "Large issue that encompasses multiple issues"
+  },
+  {
+    "name": "refactor",
+    "color": "c2e0c6",
+    "description": "Improve or optimize existing code without changing its functionality"
+  },
+  {
+    "name": "validation",
+    "color": "5319e7",
+    "description": "Related to testing and validating solutions"
+  },
+  {
+    "name": "wont do/fix",
+    "color": "eeeeee",
+    "description": "This will not be worked on"
+  }
+]

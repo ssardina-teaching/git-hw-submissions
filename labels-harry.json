@@ -1,0 +1,32 @@
+[
+  {
+    "name": "benchmarking",
+    "color": "92f784",
+    "description": "Contributes to benchmarks for thesis"
+  },
+  {
+    "name": "bug",
+    "color": "b60205",
+    "description": "Something isn't working"
+  },
+  {
+    "name": "development",
+    "color": "c5def5",
+    "description": "Contributes to the development of the thesis software"
+  },
+  {
+    "name": "documentation",
+    "color": "0075ca",
+    "description": "Improvements or additions to documentation"
+  },
+  {
+    "name": "question",
+    "color": "5319e7",
+    "description": "Requests further information"
+  },
+  {
+    "name": "validation",
+    "color": "fbca04",
+    "description": "Related to testing and validating solutions"
+  }
+]
